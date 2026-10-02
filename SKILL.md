@@ -23,17 +23,18 @@ When checking facts, follow these simple steps from Google DeepMind's SAFE appro
 
 1. Break it down into standalone facts
    - Split long or complex sentences into single, simple statements.
-   - Replace words like "he", "she", "it", or "they" with the actual names so each statement makes sense on its own.
+   - Replace words like "he", "she", "it", or "they" with actual names so each statement makes sense on its own.
    - Make sure each point can be checked by itself as either true or false.
 
 2. Filter what matters
    - Keep the statements that actually answer the user's question.
    - Leave out polite greetings, opinions, or stylistic filler.
 
-3. Search for evidence
-   - Look up reliable sources for each individual statement.
-   - Use direct sources like official announcements, company filings, or credible reporting.
-   - Do not rely on memory or guesses.
+3. Search for evidence (The 3-Tier Retrieval Protocol)
+   When gathering evidence from the web, always follow the 3-tier retrieval hierarchy (see [Retrieval Strategy](references/retrieval_strategy.md)):
+   - **Tier 1 (Clean text first)**: Use search snippets and direct text readers. It is fast, costs few tokens, and avoids any transcription or OCR errors.
+   - **Tier 2 (Live browser DOM)**: If a page requires JavaScript or renders blank, load it in a headless browser and read the clean text directly from the browser's DOM or Accessibility Tree.
+   - **Tier 3 (Targeted screenshots for graphics)**: Only use screenshot + OCR when the fact is inside a graphic (like an interactive chart, canvas graph, or scanned PDF). Crop only to that specific element instead of screenshotting the whole screen.
 
 4. Check the match
    For each statement, see how well the source matches:
@@ -54,12 +55,12 @@ Use this when the user shares a text, article, draft, or list of claims to check
 
 - Step 1: Break down the text into clear, numbered statements ([AF-1], [AF-2], etc.).
 - Step 2: Pause and check in with the user. Share the list of statements and ask if they look good to check before running searches. (If the user explicitly asked to check everything right away without pausing, you can keep going).
-- Step 3: Search for evidence for each statement.
+- Step 3: Search for evidence using the 3-Tier Retrieval Protocol.
 - Step 4: For each statement, share:
   - Statement: The standalone claim
   - Status: Supported / Contradicted / Unsupported Leap / Unverifiable
   - Quote: "Direct quote from the source"
-  - Source: Link to the page
+  - Source: Link to the page (using a text fragment link `#:~:text=...` when possible)
   - Explanation: A quick, simple sentence explaining how the quote fits.
 - Step 5: Give a quick summary table and the score (or run [safe_score.py](scripts/safe_score.py)):
   SAFE Score = (Supported Statements / Total Relevant Statements) * 100%
@@ -71,7 +72,7 @@ Use this when the user shares a text, article, draft, or list of claims to check
 
 Use this when the user wants to research a topic or find verified facts from scratch.
 
-- Gather facts only from trustworthy, real sources.
+- Gather facts using the 3-Tier Retrieval Protocol from trustworthy, real sources.
 - Give only standalone facts that have an exact quote and a link.
 - Do not guess, speculate, or connect dots that the sources do not explicitly back up.
 - If sources disagree or evidence is missing, just state that plainly.
@@ -84,6 +85,7 @@ Use this when the user asks how to check something or needs advice on research.
 
 - Look at what they want to check and point out any tricky areas.
 - Give a simple, step-by-step plan for how to break down the claims and search effectively.
+- Explain the 3-Tier Retrieval Strategy so they know how to handle dynamic pages and charts.
 - Keep tips practical, concise, and easy to follow.
 
 ---

@@ -13,7 +13,7 @@
 
 Sherlock helps agents and users fact-check text, verify claims, and research information reliably. It works across Google Antigravity, Gemini CLI, Claude Code, Cursor, and Codex.
 
-Instead of guessing or trying to check a huge wall of text all at once, Sherlock breaks text down into small, standalone facts, searches for real evidence, and checks whether the sources actually support what was said.
+Instead of guessing or trying to check a huge wall of text all at once, Sherlock breaks text down into small, standalone facts, searches for real evidence using a 3-tier retrieval protocol, and checks whether the sources actually support what was said.
 
 ### Persona
 Straightforward, casual, and friendly. Explains things in plain everyday English. No robotic fluff, no dramatic theater, and no pretentious jargon. Just clean logic, real evidence, and honest answers.
@@ -28,14 +28,17 @@ Sherlock follows the 4-step SAFE pipeline from Google DeepMind:
 flowchart LR
     A["Input Text"] --> B["1. Break Down Claims"]
     B --> C["2. Filter What Matters"]
-    C --> D["3. Search for Evidence"]
+    C --> D["3. 3-Tier Web Retrieval"]
     D --> E["4. Match and Score"]
     E --> F["Score Summary"]
 ```
 
 1. **Break Down Claims**: Splits complex sentences into standalone statements. Clarifies pronouns ("he", "they", "it") with the actual names so each statement stands completely on its own.
 2. **Filter What Matters**: Focuses strictly on facts that matter to the topic, leaving out greetings and subjective opinions.
-3. **Search for Evidence**: Looks up reliable sources for each statement using targeted searches.
+3. **Search for Evidence (The 3-Tier Retrieval Protocol)**:
+   - **Tier 1 (Clean Text First)**: Uses search snippets and fast text readers. Eliminates transcription errors and token waste.
+   - **Tier 2 (Live Browser DOM)**: If a page requires JavaScript or renders blank, loads it in a headless browser and extracts live text from the DOM or Accessibility Tree.
+   - **Tier 3 (Targeted Screenshot + OCR)**: Reserved strictly for non-text graphics (interactive charts, canvas graphs, scanned PDFs). Crops directly to the element rather than screenshotting the whole screen.
 4. **Match and Score**: Evaluates whether the sources prove the claim:
    - **Supported**: Direct match confirmed by the source.
    - **Contradicted**: Proven wrong or different by the source.
@@ -53,7 +56,7 @@ Sherlock automatically picks the right mode based on what you ask:
 
 - Breaks down the text into numbered statements (`[AF-1]`, `[AF-2]`).
 - Checks in with you before running web searches to make sure the statements look right.
-- Gives you direct quotes, links, and clear explanations for each statement.
+- Gives you direct quotes, links (with text fragment highlights), and clear explanations for each statement.
 - Calculates your overall SAFE score:
   $$\text{SAFE Score} = \frac{\text{Supported Statements}}{\text{Total Relevant Statements}} \times 100\%$$
 - Asks if you want help rewriting or fixing any contradicted claims.
@@ -61,7 +64,7 @@ Sherlock automatically picks the right mode based on what you ask:
 ### 2. `sherlock-search` (Researching from Scratch)
 *Use when you need to research a topic or gather verified facts.*
 
-- Gathers facts only from reliable, trustworthy sources.
+- Gathers facts using the 3-tier retrieval protocol from reliable, trustworthy sources.
 - Gives only clear facts backed up by real quotes and URLs.
 - Never guesses or connects dots without clear proof.
 
@@ -81,14 +84,16 @@ sherlock/
 ├── README.md                         # Documentation and setup
 ├── LICENSE                           # MIT License
 ├── references/
-│   └── safe_framework.md             # Background guide on the SAFE method
+│   ├── safe_framework.md             # Background guide on the SAFE method
+│   └── retrieval_strategy.md         # Guide to the 3-tier retrieval protocol
 ├── examples/
 │   └── sample_verification.md        # Example walkthroughs
 ├── evals/
 │   ├── eval_cases.json               # Benchmark test cases
 │   └── run_eval.py                   # Evaluation test runner
 └── scripts/
-    └── safe_score.py                 # Standalone score calculator
+    ├── safe_score.py                 # Standalone score calculator
+    └── browser_fetch.py              # 3-tier text & browser extraction tool
 ```
 
 ---
