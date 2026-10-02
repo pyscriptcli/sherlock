@@ -1,0 +1,69 @@
+[
+  {
+    "id": "eval_001_single_supported",
+    "mode": "sherlock-validate",
+    "input_text": "Apollo 11 landed humans on the Moon on July 20, 1969.",
+    "expected_atomic_facts": [
+      "Apollo 11 landed humans on the Moon.",
+      "The Apollo 11 Moon landing occurred on July 20, 1969."
+    ],
+    "expected_verdicts": {
+      "supported": 2,
+      "contradicted": 0,
+      "unsupported_leap": 0,
+      "unverifiable": 0
+    },
+    "expected_safe_score": 100.0
+  },
+  {
+    "id": "eval_002_explicit_contradiction",
+    "mode": "sherlock-validate",
+    "input_text": "Thomas Edison invented the telephone in 1876.",
+    "expected_atomic_facts": [
+      "Thomas Edison invented the telephone.",
+      "The telephone was invented in 1876."
+    ],
+    "expected_verdicts": {
+      "supported": 1,
+      "contradicted": 1,
+      "unsupported_leap": 0,
+      "unverifiable": 0
+    },
+    "expected_safe_score": 50.0
+  },
+  {
+    "id": "eval_003_compound_mixed_claims",
+    "mode": "sherlock-validate",
+    "input_text": "In 2012, Google acquired DeepMind for $500 million and immediately closed its London headquarters.",
+    "expected_atomic_facts": [
+      "Google acquired DeepMind.",
+      "The acquisition occurred in 2012.",
+      "The acquisition price was $500 million.",
+      "Google closed DeepMind's London headquarters immediately after the acquisition."
+    ],
+    "expected_verdicts": {
+      "supported": 2,
+      "contradicted": 2,
+      "unsupported_leap": 0,
+      "unverifiable": 0
+    },
+    "expected_safe_score": 50.0
+  },
+  {
+    "id": "eval_004_unsupported_leap",
+    "mode": "sherlock-validate",
+    "input_text": "Because the CEO visited Tokyo, the company decided to open an AI research lab in Shibuya next quarter.",
+    "expected_atomic_facts": [
+      "The CEO visited Tokyo.",
+      "The company decided to open an AI research lab in Shibuya next quarter.",
+      "The lab decision was directly caused by the CEO's Tokyo visit."
+    ],
+    "expected_verdicts": {
+      "supported": 1,
+      "contradicted": 0,
+      "unsupported_leap": 2,
+      "unverifiable": 0
+    },
+    "expected_safe_score": 33.33
+  }
+]
