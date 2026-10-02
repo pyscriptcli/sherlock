@@ -1,103 +1,101 @@
-# Sherlock 🔎
+# Sherlock
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Framework: Google DeepMind SAFE](https://img.shields.io/badge/Framework-DeepMind%20SAFE-orange.svg)](https://arxiv.org/abs/2403.18802)
 [![Standard: Agent Skills Open Spec](https://img.shields.io/badge/Standard-Agent%20Skills-purple.svg)](https://agentskills.io)
 [![Evaluations: 4/4 Passing](https://img.shields.io/badge/Evaluations-4%2F4%20Passing-brightgreen.svg)](evals/)
 
-> **Master fact-checker and strict evidence router powered by Google DeepMind's SAFE (Search-Augmented Factuality Evaluator) framework and compliant with the Anthropic Agent Skills Open Standard. Intolerant of hallucinations, speculation, or unsupported leaps.**
+> A practical fact-checker and researcher powered by Google DeepMind's SAFE (Search-Augmented Factuality Evaluator) framework. Built to check if claims are actually backed up by real, verifiable sources without making things up.
 
 ---
 
 ## Overview
 
-**Sherlock** is an agentic fact-checking and strict research skill designed for modern AI pair-programming and autonomous workflows (Google Antigravity, Gemini CLI, Claude Code, Cursor, and Codex).
+Sherlock helps agents and users fact-check text, verify claims, and research information reliably. It works across Google Antigravity, Gemini CLI, Claude Code, Cursor, and Codex.
 
-Built around Google DeepMind's seminal research (*"Long-form Factuality in Large Language Models"*, Wei et al., 2024) and optimized according to Anthropic's **Agent Skills** specification, Sherlock breaks composite claims into atomic, de-contextualized propositions, searches authoritative sources, and evaluates claims through strict mathematical entailment.
+Instead of guessing or trying to check a huge wall of text all at once, Sherlock breaks text down into small, standalone facts, searches for real evidence, and checks whether the sources actually support what was said.
 
 ### Persona
-Brilliant, impatient fact-checker. Strictly pure logic, atomic fact decomposition, and explicit retrieval-grounded proof. Zero tolerance for hallucinations, conversational filler, or ungrounded assertions.
+Straightforward, casual, and friendly. Explains things in plain everyday English. No robotic fluff, no dramatic theater, and no pretentious jargon. Just clean logic, real evidence, and honest answers.
 
 ---
 
-## ⚡ The SAFE Framework
+## The SAFE Method: How It Works
 
-Sherlock operates strictly along the 4-stage **SAFE** evaluation pipeline:
+Sherlock follows the 4-step SAFE pipeline from Google DeepMind:
 
 ```mermaid
 flowchart LR
-    A["Long-form Text"] --> B["1. Atomic Decomposition"]
-    B --> C["2. Relevance Filter"]
-    C --> D["3. Multi-Step Search"]
-    D --> E["4. Strict Entailment"]
-    E --> F["SAFE Scorecard"]
+    A["Input Text"] --> B["1. Break Down Claims"]
+    B --> C["2. Filter What Matters"]
+    C --> D["3. Search for Evidence"]
+    D --> E["4. Match and Score"]
+    E --> F["Score Summary"]
 ```
 
-1. **Decomposition & De-contextualization**: Breaks compound statements into standalone atomic facts. Resolves ambiguous pronouns ("he", "it", "they") and relative timestamps into canonical entities and dates.
-2. **Relevance Filtering**: Classifies whether each atomic assertion is essential to directly answering the inquiry.
-3. **Multi-Step Search & Verification**: Dispatches targeted, high-precision web queries against each individual atomic statement.
-4. **Strict Entailment Evaluation**: Categorizes each claim into one of four rigid truth buckets:
-   - ✅ **Supported**: Confirmed directly by verbatim text in an authoritative source.
-   - ❌ **Contradicted**: Explicitly refuted by verified evidence.
-   - ⚠️ **Unsupported Leap**: Plausible or partially related, but lacks explicit, incontrovertible proof.
-   - ❓ **Unverifiable**: No authoritative search evidence exists to confirm or deny.
+1. **Break Down Claims**: Splits complex sentences into standalone statements. Clarifies pronouns ("he", "they", "it") with the actual names so each statement stands completely on its own.
+2. **Filter What Matters**: Focuses strictly on facts that matter to the topic, leaving out greetings and subjective opinions.
+3. **Search for Evidence**: Looks up reliable sources for each statement using targeted searches.
+4. **Match and Score**: Evaluates whether the sources prove the claim:
+   - **Supported**: Direct match confirmed by the source.
+   - **Contradicted**: Proven wrong or different by the source.
+   - **Unsupported Leap**: Sounds plausible, but the source does not actually prove it.
+   - **Unverifiable**: No reliable public evidence found.
 
 ---
 
-## 🧭 Smart Routing Logic
+## The Three Modes
 
-Sherlock automatically routes user queries into three specialized execution modes:
+Sherlock automatically picks the right mode based on what you ask:
 
-### 1. `sherlock-validate` (Post-Checker)
-*Triggered when evaluating existing texts, articles, memos, or claims.*
+### 1. `sherlock-validate` (Checking Existing Text)
+*Use when you want to check an article, draft, or list of claims.*
 
-- **Decomposes** text into numbered atomic claims (`[AF-1]`, `[AF-2]`).
-- **HITL Pause**: Requests user confirmation before issuing external search queries.
-- **Retrieval & Valuation**: Delivers verbatim quotes, canonical URLs, and direct entailment rationale.
-- **SAFE Factuality Score**:
-  $$\text{SAFE Factuality Score} = \frac{\text{Supported Facts}}{\text{Total Relevant Facts}} \times 100\%$$
-- **Deep-Dive HITL**: Offers follow-up forensic investigation on contradicted or unsupported claims.
+- Breaks down the text into numbered statements (`[AF-1]`, `[AF-2]`).
+- Checks in with you before running web searches to make sure the statements look right.
+- Gives you direct quotes, links, and clear explanations for each statement.
+- Calculates your overall SAFE score:
+  $$\text{SAFE Score} = \frac{\text{Supported Statements}}{\text{Total Relevant Statements}} \times 100\%$$
+- Asks if you want help rewriting or fixing any contradicted claims.
 
-### 2. `sherlock-search` (Strict Researcher)
-*Triggered when gathering facts, discovering information, or researching from scratch.*
+### 2. `sherlock-search` (Researching from Scratch)
+*Use when you need to research a topic or gather verified facts.*
 
-- Operates under a strict zero-hallucination mandate.
-- Returns **ONLY** atomic, verifiable facts accompanied by verbatim quotes and source URLs.
-- Outright refuses to infer, extrapolate, speculate, or connect dots without explicit proof.
+- Gathers facts only from reliable, trustworthy sources.
+- Gives only clear facts backed up by real quotes and URLs.
+- Never guesses or connects dots without clear proof.
 
-### 3. `sherlock-help` (Advisor)
-*Triggered when seeking research methodology, verification planning, or query architecture.*
+### 3. `sherlock-help` (Planning and Advice)
+*Use when you want advice on how to fact-check something.*
 
-- Assesses research objectives, identifying potential hallucination hotspots.
-- Delivers a structured, step-by-step verification blueprint and source triangulation hierarchy.
+- Helps you break down a complex topic.
+- Gives you a practical search plan and tips on which sources to trust.
 
 ---
 
-## 📁 Repository Structure
-
-Adheres strictly to the Anthropic Agent Skills directory standard with Progressive Disclosure and Evaluation-Driven Development:
+## Repository Structure
 
 ```text
 sherlock/
-├── SKILL.md                          # Primary agent skill specification & routing
-├── README.md                         # Documentation & installation guide
+├── SKILL.md                          # Main skill instructions
+├── README.md                         # Documentation and setup
 ├── LICENSE                           # MIT License
 ├── references/
-│   └── safe_framework.md             # Theoretical & mathematical reference guide
+│   └── safe_framework.md             # Background guide on the SAFE method
 ├── examples/
-    └── sample_verification.md        # Complete walkthroughs for validate, search & help
+│   └── sample_verification.md        # Example walkthroughs
 ├── evals/
-│   ├── eval_cases.json               # Benchmark verification test suite
-│   └── run_eval.py                   # Automated test harness for SAFE math and contracts
+│   ├── eval_cases.json               # Benchmark test cases
+│   └── run_eval.py                   # Evaluation test runner
 └── scripts/
-    └── safe_score.py                 # Standalone SAFE metric calculator CLI
+    └── safe_score.py                 # Standalone score calculator
 ```
 
 ---
 
-## 🧪 Evaluation Suite
+## Testing & Evaluations
 
-Per Anthropic's skill authoring guidelines, Sherlock includes an evaluation harness to guarantee factual precision metrics:
+You can run the evaluation test suite at any time:
 
 ```bash
 python evals/run_eval.py
@@ -118,24 +116,20 @@ All evaluation benchmarks passed successfully.
 
 ---
 
-## 🚀 Installation & Setup
+## Setup & Installation
 
-### 1. Global Installation (Antigravity / Gemini CLI)
-Install Sherlock into your global skills directory so it is instantly available across all your projects:
-
+### Global Installation (Antigravity / Gemini CLI)
 ```bash
 # Windows PowerShell
 New-Item -ItemType Directory -Force -Path "$HOME\.gemini\config\skills\sherlock"
-Copy-Item -Path "SKILL.md", "references", "scripts", "evals", "examples" -Destination "$HOME\.gemini\config\skills\sherlock" -Recurse -Force
+Copy-Item -Path "SKILL.md", "references", "scripts", "evals", "examples", "README.md" -Destination "$HOME\.gemini\config\skills\sherlock" -Recurse -Force
 
 # Linux / macOS
 mkdir -p ~/.gemini/config/skills/sherlock
-cp -r SKILL.md references scripts evals examples ~/.gemini/config/skills/sherlock/
+cp -r SKILL.md references scripts evals examples README.md ~/.gemini/config/skills/sherlock/
 ```
 
-### 2. Project-Level Installation (Claude Code / Agents)
-To share Sherlock with your team in a specific repository:
-
+### Project Installation (Claude Code / Agents)
 ```bash
 mkdir -p .agents/skills/sherlock
 cp -r SKILL.md references scripts .agents/skills/sherlock/
@@ -143,13 +137,6 @@ cp -r SKILL.md references scripts .agents/skills/sherlock/
 
 ---
 
-## 📚 References & Citation
-
-- **SAFE Paper**: Jerry Wei, Chengrun Yang, Xinying Song, Yifeng Lu, Nathan Hu, Jie Huang, Dustin Tran, Denny Zhou, Quoc V. Le (Google DeepMind, 2024). *"Long-form Factuality in Large Language Models"*. [arXiv:2403.18802](https://arxiv.org/abs/2403.18802).
-- **Agent Skills Standard**: [agentskills.io](https://agentskills.io) & [Anthropic Agent Skills Documentation](https://platform.claude.com/docs/agents-and-tools/agent-skills/).
-
----
-
-## 📄 License
+## License
 
 Distributed under the [MIT License](LICENSE).
