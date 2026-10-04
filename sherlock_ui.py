@@ -1314,6 +1314,24 @@ async def websocket_endpoint(websocket: WebSocket):
             pass
 
 
+def free_port(port: int = 7860):
+    """Gracefully terminates any previous stale server process on the port."""
+    if sys.platform == "win32":
+        try:
+            import subprocess
+            cmd = f'netstat -aon | findstr ":{port}" | findstr "LISTENING"'
+            out = subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.DEVNULL)
+            for line in out.strip().splitlines():
+                parts = line.strip().split()
+                if len(parts) >= 5:
+                    pid = parts[-1]
+                    if pid.isdigit() and int(pid) != os.getpid():
+                        print(f"Stopping existing server process (PID {pid})...")
+                        subprocess.run(f"taskkill /f /pid {pid}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception:
+            pass
+
+
 def find_available_port(start_port: int = 7860, max_attempts: int = 10) -> int:
     import socket
     for port in range(start_port, start_port + max_attempts):
@@ -1325,16 +1343,17 @@ def find_available_port(start_port: int = 7860, max_attempts: int = 10) -> int:
 
 def main():
     import webbrowser
+    free_port(7860)
     port = find_available_port(7860)
 
     print("\n" + "=" * 65)
     print("      SHERLOCK INVESTIGATION STUDIO (Local Web UI)")
     print("=" * 65)
-    print(f"  • Server running at: http://localhost:{port}")
-    print("  • Layout: Perplexity / Computer Architecture (Dual-Pane + Hero)")
-    print("  • Live Playwright CDP Screencasting: Enabled")
-    print("  • Anti-Slop Strictness: Enabled")
-    print("  • Fact Cache: Enabled")
+    print(f"  * Server running at: http://localhost:{port}")
+    print("  * Layout: Perplexity / Computer Architecture (Dual-Pane + Hero)")
+    print("  * Live Playwright CDP Screencasting: Enabled")
+    print("  * Anti-Slop Strictness: Enabled")
+    print("  * Fact Cache: Enabled")
     print("=" * 65 + "\n")
 
     try:
