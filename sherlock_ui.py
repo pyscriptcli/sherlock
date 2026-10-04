@@ -1314,24 +1314,35 @@ async def websocket_endpoint(websocket: WebSocket):
             pass
 
 
+def find_available_port(start_port: int = 7860, max_attempts: int = 10) -> int:
+    import socket
+    for port in range(start_port, start_port + max_attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            if s.connect_ex(("127.0.0.1", port)) != 0:
+                return port
+    return start_port
+
+
 def main():
     import webbrowser
+    port = find_available_port(7860)
+
     print("\n" + "=" * 65)
-    print("      🕵️  SHERLOCK INVESTIGATION STUDIO (Local Web UI)")
+    print("      SHERLOCK INVESTIGATION STUDIO (Local Web UI)")
     print("=" * 65)
-    print("  • Server running at: http://localhost:7860")
-    print("  • Layout: Perplexity / Computer Inspiron (Dual-Pane + Hero)")
+    print(f"  • Server running at: http://localhost:{port}")
+    print("  • Layout: Perplexity / Computer Architecture (Dual-Pane + Hero)")
     print("  • Live Playwright CDP Screencasting: Enabled")
     print("  • Anti-Slop Strictness: Enabled")
     print("  • Fact Cache: Enabled")
     print("=" * 65 + "\n")
 
     try:
-        webbrowser.open("http://localhost:7860")
+        webbrowser.open(f"http://localhost:{port}")
     except Exception:
         pass
 
-    uvicorn.run(app, host="127.0.0.1", port=7860, log_level="warning")
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
 
 
 if __name__ == "__main__":

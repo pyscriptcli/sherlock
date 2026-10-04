@@ -5,7 +5,7 @@ setlocal enabledelayedexpansion
 
 if "%~1"=="" (
     echo ===================================================================
-    echo              🕵️  SHERLOCK LIVE VISUAL SCRAPER  🕵️
+    echo                SHERLOCK LIVE VISUAL SCRAPER
     echo ===================================================================
     echo  Phase 1: Multi-engine search scout to discover primary sources
     echo  Phase 2: Headed Chromium browser opens on screen to validate DOM

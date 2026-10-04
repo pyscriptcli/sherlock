@@ -1,11 +1,17 @@
 @echo off
-chcp 65001 >nul
-title Sherlock Investigation Studio
 setlocal enabledelayedexpansion
+title Sherlock Investigation Studio
 
 echo ===================================================================
-echo        🕵️  SHERLOCK INVESTIGATION STUDIO (Local Web UI)
+echo             SHERLOCK INVESTIGATION STUDIO (Local Web UI)
 echo ===================================================================
+echo  Checking port 7860...
+
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":7860" ^| findstr "LISTENING" 2^>nul') do (
+    echo  Stopping existing server process (PID %%a)...
+    taskkill /f /pid %%a >nul 2>&1
+)
+
 echo  Starting local server at http://localhost:7860 ...
 echo  Live CDP browser screencast, anti-slop linter, and fact cache active.
 echo ===================================================================
