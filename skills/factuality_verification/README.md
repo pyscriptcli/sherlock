@@ -2,20 +2,20 @@
 
 This directory contains research-grade frameworks for decomposing long-form text into atomic statements and verifying each statement against public web indexes.
 
-## Modules
+## Skills
 
-### 1. `long-form-factuality/` (Google DeepMind)
-* **Source:** [google-deepmind/long-form-factuality](https://github.com/google-deepmind/long-form-factuality)
+### 1. [`safe/`](safe/SKILL.md) (Google DeepMind)
+* **Framework:** Search-Augmented Factuality Evaluator (SAFE)
 * **Core Concepts:**
-  * **SAFE (Search-Augmented Factuality Evaluator):** Decomposes complex prose into independent atomic facts (`[AF-n]`) and issues iterative search queries to classify each fact as Supported, Contradicted, or Irrelevant.
-  * **LongFact:** 2,280 human-curated fact-checking prompts across 38 domains.
-  * **F1@K Metric:** Balances fact precision with user-desired answer length.
+  * Decomposes complex prose into independent atomic facts (`[AF-n]`).
+  * Issues targeted search queries to classify each fact as Supported, Contradicted, Unsupported Leap, or Unverifiable.
+  * Calculates factual precision via the SAFE Score formula.
 
-### 2. `factscore/` (EMNLP 2023)
-* **Source:** [shmsw25/FActScore](https://github.com/shmsw25/FActScore)
+### 2. [`factscore/`](factscore/SKILL.md) (EMNLP 2023)
+* **Framework:** Fine-grained Atomic Evaluation of Factual Precision
 * **Core Concepts:**
-  * **Atomic Proposition Extraction:** Breaks compound sentences into standalone propositions.
-  * **Knowledge Base Validation:** Measures the percentage of generated atomic facts that are supported by reliable reference corpuses.
+  * Deconstructs long-form generation into the smallest self-contained atomic propositions.
+  * Disambiguates entities and referents.
 
 ## How Sherlock Orchestrates This Category
 When `/sherlock` is invoked in `sherlock-validate` mode:

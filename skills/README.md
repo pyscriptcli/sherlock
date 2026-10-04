@@ -1,37 +1,37 @@
-# Sherlock Sub-Skills & Engine Ecosystem
+# Sherlock Categorized Skills Ecosystem
 
-This directory houses the specialized toolkits, research engines, and scrapers orchestrated by `/sherlock`.
+This directory houses the curated, modular skills orchestrated by `/sherlock`.
 
 ```
 skills/
-├── factuality_verification/       # Category 1: Atomic proposition checkers
-│   ├── long-form-factuality/      # Google DeepMind SAFE & LongFact benchmark
-│   ├── factscore/                 # FActScore atomic factuality evaluation
+├── factuality_verification/       # Category 1: Atomic fact checkers
+│   ├── safe/                      # Google DeepMind SAFE protocol
+│   ├── factscore/                 # FActScore atomic proposition evaluator
 │   └── README.md
 │
 ├── research_synthesis/            # Category 2: Multi-step autonomous research
 │   ├── storm/                     # Stanford STORM multi-perspective RAG
-│   ├── open-deep-research/        # LangChain recursive research agent
+│   ├── deep-research/             # Recursive multi-turn research protocol
 │   └── README.md
 │
 ├── scraping_automation/           # Category 3: Ground-truth web extractors
-│   ├── sherlock-scrape/           # Visual headed Playwright sniper
-│   ├── crawl4ai/                  # High-concurrency LLM crawler
+│   ├── sherlock-scrape/           # Visual headed Playwright DOM sniper
+│   │   ├── SKILL.md
+│   │   ├── references/
+│   │   └── scripts/browser_fetch.py
 │   └── README.md
 │
 └── anti_slop/                     # Category 4: Anti-bloat & prose sanitizers
-    ├── kill-ai-slop/              # AI tics & prose fluff filter
-    ├── deslop/                    # Git diff & code cleaner
-    ├── aislop/                    # Deterministic prose linter
+    ├── anti-slop/                 # Banned AI tics & verbal fluff filter
     ├── ponytail/                  # Senior dev YAGNI & standard library ladder
     └── README.md
 ```
 
 ## Orchestration Overview
 
-| Category | Primary Trigger | Engine / Script | Role in Sherlock |
+| Category | Primary Trigger | Target Skill | Role in Sherlock |
 | :--- | :--- | :--- | :--- |
-| **Factuality & Verification** | Claim validation, factual scoring | `long-form-factuality`, `safe_score.py` | Breaks text into atomic facts and scores precision |
-| **Research & Synthesis** | Broad investigations, market surveys | `storm`, `open-deep-research` | Collects multi-angle perspectives and cited outlines |
-| **Scraping Automation** | Live prices, JS SPAs, visual auditing | `browser_fetch.py`, `crawl4ai` | Captures rendered DOM text with one-click proof links |
-| **Anti-Slop** | Output formatting, code verification | `kill-ai-slop`, `ponytail` | Eliminates filler words, enforces direct answers and lean code |
+| **Factuality & Verification** | Claim validation, factual scoring | `safe`, `factscore` | Breaks text into atomic facts and scores precision |
+| **Research & Synthesis** | Broad investigations, deep research | `storm`, `deep-research` | Collects multi-angle perspectives and cited outlines |
+| **Scraping Automation** | Live prices, JS SPAs, visual auditing | `sherlock-scrape` | Captures rendered DOM text with one-click proof links |
+| **Anti-Slop** | Output formatting, code verification | `anti-slop`, `ponytail` | Eliminates filler words, enforces direct answers and lean code |

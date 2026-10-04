@@ -97,20 +97,17 @@ sherlock/
 ├── scripts/                          # Sherlock core utilities
 │   ├── safe_score.py                 # Factual precision calculator
 │   └── browser_fetch.py              # Playwright DOM text & element screenshot tool
-└── skills/                           # Cloned & categorized sub-skills ecosystem
+└── skills/                           # Curated sub-skills ecosystem
     ├── factuality_verification/      # Category 1: Atomic fact checkers
-    │   ├── long-form-factuality/     # Google DeepMind SAFE & LongFact benchmark
+    │   ├── safe/                     # Google DeepMind SAFE protocol
     │   └── factscore/                # FActScore atomic proposition evaluator
     ├── research_synthesis/           # Category 2: Autonomous research engines
     │   ├── storm/                    # Stanford STORM multi-perspective RAG
-    │   └── open-deep-research/       # LangChain iterative multi-agent research
+    │   └── deep-research/            # Recursive multi-turn research protocol
     ├── scraping_automation/          # Category 3: Ground-truth web extractors
-    │   ├── sherlock-scrape/          # Visual headed Playwright DOM sniper
-    │   └── crawl4ai/                 # High-throughput LLM crawler for Markdown
+    │   └── sherlock-scrape/          # Visual headed Playwright DOM sniper
     └── anti_slop/                    # Category 4: Anti-bloat & prose sanitizers
-        ├── kill-ai-slop/             # AI tics & prose fluff filter
-        ├── deslop/                   # Git diff & code cleaner
-        ├── aislop/                   # Deterministic prose linter
+        ├── anti-slop/                # Banned AI tics & verbal fluff filter
         └── ponytail/                 # Senior dev YAGNI & standard library ladder
 ```
 
@@ -118,12 +115,12 @@ sherlock/
 
 ## Sub-Skill Categories
 
-| Category | Contained Modules | Role in Orchestration |
+| Category | Skills | Role in Orchestration |
 | :--- | :--- | :--- |
-| **1. Factuality & Verification** | `long-form-factuality`, `factscore` | Breaks sentences into atomic claims and verifies against factual knowledge bases. |
-| **2. Research & Synthesis** | `storm`, `open-deep-research` | Drives multi-angle research, expert persona inquiries, and cited report outlines. |
-| **3. Scraping Automation** | `sherlock-scrape`, `crawl4ai` | Live visual browser execution with Playwright; outputs yellow-highlighted Chrome proof links. |
-| **4. Anti-Slop & De-bloat** | `kill-ai-slop`, `deslop`, `aislop`, `ponytail` | Eliminates filler phrases, delivers answers first, and enforces minimal, standard-library code. |
+| **1. Factuality & Verification** | `safe`, `factscore` | Breaks sentences into atomic claims and verifies against factual knowledge bases. |
+| **2. Research & Synthesis** | `storm`, `deep-research` | Drives multi-angle research, expert persona inquiries, and cited report outlines. |
+| **3. Scraping Automation** | `sherlock-scrape` | Live visual browser execution with Playwright; outputs yellow-highlighted Chrome proof links. |
+| **4. Anti-Slop & De-bloat** | `anti-slop`, `ponytail` | Eliminates filler phrases, delivers answers first, and enforces minimal, standard-library code. |
 
 ---
 

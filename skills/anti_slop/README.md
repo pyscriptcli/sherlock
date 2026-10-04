@@ -2,22 +2,21 @@
 
 This directory contains deterministic linters, git diff cleaners, and architectural philosophies that purge AI boilerplate, conversational fluff, and unnecessary complexity.
 
-## Modules
+## Skills
 
-### 1. `kill-ai-slop/` (Prose & Visual AI Tic Cleaner)
-* **Source:** [yetone/kill-ai-slop](https://github.com/yetone/kill-ai-slop)
-* **Core Concepts:** Identifies and strips pervasive LLM prose tells: "delve", "testament to", "it is worth noting", "tapestry", sycophantic intros, and generic multi-paragraph summaries.
+### 1. [`anti-slop/`](anti-slop/SKILL.md)
+* **Focus:** Banned AI tics, throat-clearing openings, and filler removal.
+* **Core Rules:**
+  * Bans "delve", "testament to", "tapestry", "in today's digital landscape", and conversational greetings.
+  * Delivers the direct answer in the first sentence.
+  * Enforces `Unverifiable` for missing proof—zero speculative padding.
 
-### 2. `deslop/` (Git Diff & Code Cleaner)
-* **Source:** [dabit3/deslop](https://github.com/dabit3/deslop)
-* **Core Concepts:** Scans code changes for AI developer anti-patterns: excessive debug statements, redundant defensive `try-catch` blocks, empty boilerplate functions, and obvious comments.
-
-### 3. `aislop/` (Deterministic Prose Linter)
-* **Source:** [scanaislop/aislop](https://github.com/scanaislop/aislop)
-* **Core Concepts:** Static heuristic analyzer checking text against known mechanical indicators of machine-generated prose without runtime LLM overhead.
-
-### 4. `ponytail/` (Senior Developer YAGNI Ladder)
-* **Philosophy:** Forces the laziest solution that actually works: standard library first, native platform features before dependencies, one line before fifty, and zero unrequested abstractions.
+### 2. [`ponytail/`](ponytail/SKILL.md)
+* **Focus:** Senior developer YAGNI ladder & anti-overengineering.
+* **Core Rules:**
+  * Reaches for standard library before third-party packages.
+  * Native platform features over custom abstractions.
+  * One line before fifty.
 
 ## How Sherlock Orchestrates This Category
 * **Every Output:** Sherlock enforces Anti-Slop Rule 8—delivering the direct answer in the first 1–3 sentences with zero throat-clearing fluff.

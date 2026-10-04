@@ -2,20 +2,19 @@
 
 This directory contains autonomous multi-step research engines designed to gather multi-angle perspectives, discover recursive citations, and synthesize comprehensive reports.
 
-## Modules
+## Skills
 
-### 1. `storm/` (Stanford University OVAL)
-* **Source:** [stanford-oval/storm](https://github.com/stanford-oval/storm)
+### 1. [`storm/`](storm/SKILL.md) (Stanford University OVAL)
+* **Framework:** Synthesis of Topic Outlines through Retrieval and Multi-perspective Question Asking
 * **Core Concepts:**
-  * **Synthesis of Topic Outlines through Retrieval and Multi-perspective Question Asking.**
   * Simulates expert conversations from diverse perspectives to uncover blind spots before drafting sections.
-  * Produces Wikipedia-style comprehensive cited reports.
+  * Produces comprehensive, cited Wikipedia-style reports.
 
-### 2. `open-deep-research/` (LangChain)
-* **Source:** [langchain-ai/open_deep_research](https://github.com/langchain-ai/open_deep_research)
+### 2. [`deep-research/`](deep-research/SKILL.md)
+* **Framework:** Recursive Information Foraging
 * **Core Concepts:**
-  * Multi-agent iterative research architecture powered by LangGraph.
-  * Recursively queries search engines, evaluates page relevance, extracts key context, and compiles long-form briefings.
+  * Multi-turn query decomposition and link traversal across deep documentation layers.
+  * Context consolidation and cross-verification across authoritative sources.
 
 ## How Sherlock Orchestrates This Category
 When `/sherlock` is invoked for broad, complex, or open-ended investigations (e.g. market overviews, technical surveys, historical timelines):

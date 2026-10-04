@@ -57,19 +57,16 @@ Sherlock is an **orchestrator**. It does not scrape or search by itself; it rout
 
 ### Categorized Sub-Skills Ecosystem (`skills/`)
 
-All specialized engines are cloned and organized directly inside `skills/`:
+All modular skills are organized directly inside [`skills/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/):
 
 | Category | Sub-Skill / Path | Role in Sherlock |
 | :--- | :--- | :--- |
-| **Factuality & Verification** | [`skills/factuality_verification/long-form-factuality/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/factuality_verification/long-form-factuality) | Google DeepMind SAFE & LongFact benchmark |
+| **Factuality & Verification** | [`skills/factuality_verification/safe/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/factuality_verification/safe) | Google DeepMind SAFE protocol |
 | **Factuality & Verification** | [`skills/factuality_verification/factscore/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/factuality_verification/factscore) | EMNLP 2023 atomic proposition evaluator |
 | **Research & Synthesis** | [`skills/research_synthesis/storm/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/research_synthesis/storm) | Stanford multi-perspective outline & topic researcher |
-| **Research & Synthesis** | [`skills/research_synthesis/open-deep-research/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/research_synthesis/open-deep-research) | LangChain recursive multi-agent research workflow |
+| **Research & Synthesis** | [`skills/research_synthesis/deep-research/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/research_synthesis/deep-research) | Recursive multi-turn research protocol |
 | **Scraping Automation** | [`skills/scraping_automation/sherlock-scrape/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/scraping_automation/sherlock-scrape) | Visual headed Playwright DOM sniper + proof links |
-| **Scraping Automation** | [`skills/scraping_automation/crawl4ai/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/scraping_automation/crawl4ai) | High-concurrency LLM crawler for bulk markdown scraping |
-| **Anti-Slop & De-bloat** | [`skills/anti_slop/kill-ai-slop/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/anti_slop/kill-ai-slop) | Regex rules & filters to strip common AI conversational tics |
-| **Anti-Slop & De-bloat** | [`skills/anti_slop/deslop/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/anti_slop/deslop) | Git diff analyzer purging defensive AI coding bloat |
-| **Anti-Slop & De-bloat** | [`skills/anti_slop/aislop/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/anti_slop/aislop) | Deterministic mechanical tell linter for machine prose |
+| **Anti-Slop & De-bloat** | [`skills/anti_slop/anti-slop/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/anti_slop/anti-slop) | Fluff stripping, verbal tic removal, answer-first rule |
 | **Anti-Slop & De-bloat** | [`skills/anti_slop/ponytail/`](file:///C:/Users/davep/.gemini/config/skills/sherlock/skills/anti_slop/ponytail) | Senior developer YAGNI ladder: standard library first |
 
 ---
