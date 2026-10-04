@@ -87,6 +87,8 @@ Sherlock serves as the **Master Orchestrator**. It evaluates incoming tasks, ext
 sherlock/
 ├── SKILL.md                          # Master Orchestrator prompt & routing index
 ├── README.md                         # Architecture overview and documentation
+├── sherlock-ui.bat                   # 1-Click Perplexity-style local web studio launcher
+├── sherlock_ui.py                    # Local Investigation Studio backend (FastAPI + CDP WebSocket)
 ├── sherlock-scrape.bat               # Interactive 1-click Windows desktop visual scraper
 ├── sherlock_scrape.py                # 2-Phase Scout & Headed DOM validator CLI
 ├── LICENSE                           # MIT License
@@ -180,6 +182,16 @@ Run directly in your Windows terminal or double-click to watch the headed browse
 .\sherlock-scrape.bat
 ```
 *Logic: Phase 1 conducts search reconnaissance to discover primary sources -> Phase 2 opens headed Chromium on your desktop to validate the live DOM.*
+
+### 6. Perplexity-Style Local Web Studio (`sherlock-ui.bat` / `sherlock_ui.py`)
+A standalone local web studio that streams live Playwright Chromium CDP screencasts directly to your browser:
+```bash
+# Launch the local web studio (opens http://localhost:7860):
+.\sherlock-ui.bat
+# Or run with python:
+python sherlock_ui.py
+```
+*Features: Zero emojis (clean monochrome SVG icons), strict anti-slop typography, dual-pane live browser screencast, real-time source pill chips, and SAFE factuality scoring.*
 
 ---
 
