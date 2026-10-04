@@ -26,8 +26,8 @@ Sherlock is an **orchestrator**. It routes each step to the tools and scripts be
 | 1 | Break text into atomic claims | **Sherlock itself** (SAFE steps below) | Reason inline, number `[AF-n]` | Claim list |
 | 2 | Fast lead discovery (snippets, URLs) | **`search_web`** tool (Tier 1) | 1-3 queries per claim, no query padding | URLs + snippets |
 | 3 | Read a known static page | **`read_url_content`** tool (Tier 1) | Pass the URL | Clean text |
-| 4 | Page blank / JS-rendered / multi-engine scout | **`sherlock-scrape`** (Tier 2) | `python scripts/browser_fetch.py [--scout "<query>"] [--headed] <urls>` | DOM text + proof links |
-| 5 | Fact lives in a chart/canvas/PDF | **`sherlock-scrape`** with `--selector` (Tier 3) | `... browser_fetch.py --browser --selector "<css>" <url>` | Element screenshot |
+| 4 | Visual live search & scrape in plain sight | **`sherlock-scrape`** (Tier 2) | `python scripts/browser_fetch.py [--scout "<query>"] <urls>` | Visible browser on screen + DOM |
+| 5 | Fact lives in a chart/canvas/PDF | **`sherlock-scrape`** with `--selector` (Tier 3) | `... browser_fetch.py --selector "<css>" <url>` | Element screenshot |
 | 6 | Score verification / CI pipeline | **`scripts/safe_score.py`** | `python scripts/safe_score.py [--json] [--ci 80]` | SAFE Score % / CI code |
 | 7 | Purge AI fluff, buzzwords & preambles | **`scripts/deslop_filter.py`** | `python scripts/deslop_filter.py [--check-only] [--json]` | Purged text / audit |
 | 8 | Local verified fact cache with TTL | **`scripts/fact_cache.py`** | `python scripts/fact_cache.py {get,set,list,clear}` | Fast cached facts |

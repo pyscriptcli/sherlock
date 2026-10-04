@@ -152,11 +152,20 @@ python scripts/safe_score.py input_claims.txt --json
 python scripts/safe_score.py input_claims.txt --ci 80.0
 ```
 
-### 4. Multi-Engine Scraper & Scout (`scripts/browser_fetch.py`)
-Fast Playwright engine with DuckDuckGo + Bing search lead discovery:
+### 4. Headed Visual Scraper & Reusable Playwright Engine (`scripts/browser_fetch.py`)
+Headed Playwright engine that pops open a visible browser on screen for live searching and DOM extraction:
 ```bash
-python scripts/browser_fetch.py --scout "iphone 15 pro greenhills price" --concurrency 3
-python scripts/browser_fetch.py https://example.com --headed --json-out out.json
+# Live on-screen search and scrape (Headed by default)
+python scripts/browser_fetch.py --scout "iphone 15 pro greenhills price"
+
+# Scrape specific URLs with proof screenshot & JSON export
+python scripts/browser_fetch.py https://example.com --selector "#price-tag" --screenshot-out proof.png --json-out out.json
+
+# Reusable Python API
+from browser_fetch import SherlockBrowser
+async with SherlockBrowser(headed=True) as engine:
+    leads = await engine.visual_search("apple iphone specs")
+    results = await engine.scrape_batch(leads)
 ```
 
 ---

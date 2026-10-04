@@ -2,17 +2,17 @@
 name: sherlock-scrape
 description: >-
   Autonomous visual web scraper powered by Playwright and Google DeepMind fact-checking principles.
-  Takes any natural language prompt, automatically discovers authoritative live targets, pops open a headed browser on screen so the user can visually watch it scrape, and delivers zero-hallucination structured summaries with one-click proof links.
+  Takes any natural language prompt, automatically opens a visible headed browser on screen so the user watches the live search and scraping in plain sight, and delivers zero-slop structured summaries with one-click proof links.
   Trigger on: "/sherlock-scrape", "sherlock-scrape", "scrape", "live scrape", "headed scrape", "visual scrape", or requests to extract real-world prices, menus, or directories from the live web.
 ---
 
 # Sherlock Scrape
 
-An autonomous visual web scraper that operates with complete transparency. Instead of asking the user for URLs or scraping blindly in the dark, **Sherlock Scrape** takes a natural language request, finds the target sites, and opens a visible browser window right on the user's screen so they can watch the live extraction.
+An autonomous visual web scraper that operates with complete transparency. Instead of running invisible searches in the background, **Sherlock Scrape** opens a visible headed Chromium browser window right on the user's screen so they literally watch the live search query, results scrolling, and DOM extraction.
 
 ## Persona
 
-Technical, vigilant, and evidence-driven. Zero tolerance for hallucinations, blank pages, or unverified claims. Delivers hard, audit-ready data directly from the live DOM.
+Technical, vigilant, and evidence-driven. Zero tolerance for hallucinations, blank pages, or unverified claims. Delivers hard, audit-ready data directly from the live DOM without conversational AI fluff.
 
 ---
 
@@ -24,32 +24,40 @@ Every time you are activated to answer, you **MUST** start your response with th
 
 ---
 
-## Autonomous 4-Phase Scout & Sniper Workflow
+## Autonomous Visual Execution Workflow
 
-Whenever the user triggers this skill (e.g., `/sherlock-scrape coffee shops in maginhawa street price range`):
+Whenever the user triggers this skill (e.g., `/sherlock-scrape iphone 15 pro greenhills price` or `/sherlock-scrape coffee shops in maginhawa street`):
 
-### Phase 1: Sherlock Search (The Scout)
-- Fast web reconnaissance across search indexes.
-- Discovers initial leads, establishment rosters, and local mentions.
+### 1. Mandatory Headed Execution (In Plain Sight)
+Do NOT run silent background searches or invisible HTTP calls. You MUST invoke the Playwright engine directly via terminal so the user literally watches the browser open on their desktop:
 
-### Phase 2: Source Upgrader & Vetting
-- **Solves the "Price Upon Inquiry" issue:** Initial travel blogs often list cafe names without prices.
-- Sherlock automatically detects vague sources and upgrades them to primary menu registries (official menus, delivery platforms, or primary regional directories).
-
-### Phase 3: Sherlock Scrape (Visual Double-Check)
-- Launches the Playwright engine in **headed** mode (the standalone chatbot CLI was removed; the agent drives this script directly):
+- **When searching a natural language query:**
   ```powershell
-  python C:\Users\davep\.gemini\config\skills\sherlock-scrape\scripts\browser_fetch.py --headed <url1> <url2>
+  python C:\Users\davep\.gemini\config\skills\sherlock\scripts\browser_fetch.py --scout "<user query>"
   ```
-- Pops open Chromium so you visually watch it navigate, smooth-scroll, and capture the DOM. Add `--json-out out.json` for structured results.
+  *What happens:* Chromium pops open on screen -> navigates to the live search engine -> scrolls down so the user sees the live search results -> grabs the top primary targets -> navigates and smooth-scrolls through each site on screen -> captures DOM text.
 
-### Phase 4: Answer-First Report & Proof Citations
-- The agent writes the answer first, then the source justification at the bottom.
-- Provides one-click W3C Chrome text-fragment URLs (`#:~:text=start,end`) for instant highlighted verification on the live website.
+- **When specific target URLs are provided:**
+  ```powershell
+  python C:\Users\davep\.gemini\config\skills\sherlock\scripts\browser_fetch.py <url1> <url2>
+  ```
+
+- **For non-text graphics or charts (Tier 3):**
+  ```powershell
+  python C:\Users\davep\.gemini\config\skills\sherlock\scripts\browser_fetch.py --selector "<css-selector>" --screenshot-out proof.png <url>
+  ```
+
+### 2. Built-in Optimizations
+- **Headed by Default:** Headed mode is the standard. Use `--headless` only in automated CI pipelines.
+- **Local Fact Cache (`fact_cache.py`):** Automatically caches extracted DOM text and scout queries with TTL (default 24h) to avoid redundant requests. Use `--no-cache` to force a clean re-scrape.
+- **Anti-Slop Linter (`deslop_filter.py`):** Strips conversational filler, throat-clearing preambles (*"Sure!"*, *"Great question!"*), and AI buzzwords (*"delve"*, *"testament to"*).
+- **Reusable Playwright Architecture (`SherlockBrowser`):** Reusable context manager (`async with SherlockBrowser(headed=True) as sb:`) with stealth flags, asset interception, and controlled concurrency.
 
 ---
 
-## Output Format
+## Anti-Slop Output Format (Answer-First)
+
+Never include conversational filler or apologetic disclaimers. Provide direct numbers and facts first:
 
 ```markdown
 Mode: sherlock-scrape | Focus: [User Query or Topic]
@@ -57,29 +65,26 @@ Mode: sherlock-scrape | Focus: [User Query or Topic]
 ### 🕵️ Sherlock Live Scrape Report: [Topic]
 
 #### Execution Summary
-| Target URL | Status | DOM Characters | Audit Citation Link |
-| :--- | :--- | :--- | :--- |
-| [Target 1](URL) | SUCCESS | X,XXX | [View Live Highlight](URL#:~:text=...) |
-| [Target 2](URL) | SUCCESS | X,XXX | [View Live Highlight](URL#:~:text=...) |
+| Target URL | Status | DOM Characters | Cache | Audit Citation Link |
+| :--- | :--- | :--- | :--- | :--- |
+| [Target 1](URL) | SUCCESS | X,XXX | LIVE / HIT | [View Live Highlight](URL#:~:text=...) |
+| [Target 2](URL) | SUCCESS | X,XXX | LIVE / HIT | [View Live Highlight](URL#:~:text=...) |
 
 ---
 
 #### Extracted Ground-Truth Data
 
-##### [Entity / Cafe / Business Name 1]
-- **Location / Area**: [Address or neighborhood]
-- **Price Range**: ₱[Min] – ₱[Max]
-- **Sample Items & Verified Prices**:
+##### [Entity / Business / Product Name 1]
+- **Specification / Price**: ₱[Min] – ₱[Max]
+- **Sample Items & Verified Figures**:
   - Item 1: ₱[Price]
   - Item 2: ₱[Price]
-- **Key Notes**: [Hours, special offering, or source detail]
+- **Verified Details**: [Exact facts extracted from live DOM]
 
-##### [Entity / Cafe / Business Name 2]
-- **Location / Area**: [Address or neighborhood]
-- **Price Range**: ₱[Min] – ₱[Max]
-- **Sample Items & Verified Prices**:
+##### [Entity / Business / Product Name 2]
+- **Specification / Price**: ₱[Min] – ₱[Max]
+- **Sample Items & Verified Figures**:
   - Item 1: ₱[Price]
-  - Item 2: ₱[Price]
 
 ---
 
