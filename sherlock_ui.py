@@ -46,7 +46,7 @@ import uvicorn
 
 app = FastAPI(title="Sherlock Investigation Studio")
 
-HTML_TEMPLATE = """<!DOCTYPE html>
+HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
