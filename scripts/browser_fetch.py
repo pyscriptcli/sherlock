@@ -88,6 +88,54 @@ def fetch_tier1_text(url: str, timeout: int = 10) -> str:
     return parser.get_text()
 
 
+def scout_search(query: str, max_results: int = 4) -> List[str]:
+    """Scouts primary search leads using resilient multi-engine fallbacks (DuckDuckGo + Bing)."""
+    results = []
+    # 1. DuckDuckGo HTML
+    try:
+        post_data = urllib.parse.urlencode({"q": query}).encode("utf-8")
+        req = urllib.request.Request(
+            "https://html.duckduckgo.com/html/",
+            data=post_data,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        )
+        with urllib.request.urlopen(req, timeout=8) as response:
+            html = response.read().decode("utf-8", errors="replace")
+        matches = re.findall(r'<a[^>]+class=[\'"][^\'"]*result__url[^\'"]*[\'"][^>]+href=[\'"]([^\'"]+)[\'"]', html)
+        for m in matches:
+            actual = urllib.parse.unquote(m.split("uddg=")[1].split("&")[0]) if "uddg=" in m else m.strip()
+            if actual.startswith("http") and "duckduckgo" not in actual and actual not in results:
+                results.append(actual)
+            if len(results) >= max_results:
+                break
+    except Exception:
+        pass
+
+    # 2. Bing Search Fallback
+    if not results:
+        try:
+            b_url = f"https://www.bing.com/search?q={urllib.parse.quote(query)}"
+            req = urllib.request.Request(
+                b_url, 
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"}
+            )
+            with urllib.request.urlopen(req, timeout=8) as response:
+                html = response.read().decode("utf-8", errors="replace")
+            matches = re.findall(r'<li class=[\'"]b_algo[\'"].*?<h2><a href=[\'"](https?://[^\'"]+)[\'"]', html)
+            for m in matches:
+                if "bing.com" not in m and m not in results:
+                    results.append(m)
+                if len(results) >= max_results:
+                    break
+        except Exception:
+            pass
+
+    return results
+
+
 # ----------------------------------------------------------------------
 # Optimized Playwright Engine (Applying the 5 Golden Rules)
 # ----------------------------------------------------------------------
@@ -301,8 +349,21 @@ def main():
     parser.add_argument("--screenshot-out", default="chart.png", help="Path to save element screenshot")
     parser.add_argument("--allow-images", action="store_true", help="Do not block images/fonts during fetch")
     parser.add_argument("--json-out", help="Save extracted results to a structured JSON file")
+    parser.add_argument("--scout", help="Search query to automatically scout leads and extract (Multi-engine)")
 
     args = parser.parse_args()
+
+    # Automatic lead scouting if --scout is provided
+    scouted_urls = []
+    if args.scout:
+        print(f"[*] Scouting search leads for: '{args.scout}'...")
+        scouted_urls = scout_search(args.scout, max_results=args.concurrency)
+        if scouted_urls:
+            print(f"[✓] Discovered {len(scouted_urls)} lead(s):")
+            for u in scouted_urls:
+                print(f"  • {u}")
+        else:
+            print("[-] No direct search hits discovered.")
 
     # Collect target URLs
     urls = []
@@ -310,7 +371,16 @@ def main():
         with open(args.urls_file, "r", encoding="utf-8") as f:
             urls = [line.strip() for line in f if line.strip() and not line.startswith("#")]
     elif args.urls:
-        urls = args.urls
+        urls = list(args.urls)
+
+    if scouted_urls:
+        for u in scouted_urls:
+            if u not in urls:
+                urls.append(u)
+
+    if not urls:
+        print("[!] No target URLs provided or found via search scout.")
+        return
 
     # Quote link generation
     if args.quote and len(urls) == 1:

@@ -95,8 +95,10 @@ sherlock/
 │   ├── eval_cases.json
 │   └── run_eval.py
 ├── scripts/                          # Sherlock core utilities
-│   ├── safe_score.py                 # Factual precision calculator
-│   └── browser_fetch.py              # Playwright DOM text & element screenshot tool
+│   ├── safe_score.py                 # Factual precision calculator (Markdown/JSON, --ci)
+│   ├── browser_fetch.py              # Playwright DOM text & element screenshot tool (--scout)
+│   ├── deslop_filter.py              # Deterministic anti-slop linter & fluff sanitizer
+│   └── fact_cache.py                 # Local verified fact knowledge cache with TTL
 └── skills/                           # Curated sub-skills ecosystem
     ├── factuality_verification/      # Category 1: Atomic fact checkers
     │   ├── safe/                     # Google DeepMind SAFE protocol
@@ -121,6 +123,41 @@ sherlock/
 | **2. Research & Synthesis** | `storm`, `deep-research` | Drives multi-angle research, expert persona inquiries, and cited report outlines. |
 | **3. Scraping Automation** | `sherlock-scrape` | Live visual browser execution with Playwright; outputs yellow-highlighted Chrome proof links. |
 | **4. Anti-Slop & De-bloat** | `anti-slop`, `ponytail` | Eliminates filler phrases, delivers answers first, and enforces minimal, standard-library code. |
+
+---
+
+## Core Utilities & Upgrades
+
+Sherlock provides 4 built-in Python tools designed for agent pipelines and deterministic fact-checking:
+
+### 1. Anti-Slop Filter (`scripts/deslop_filter.py`)
+Deterministic regex sanitizer removing conversational AI tics, filler words, and throat-clearing preambles:
+```bash
+python scripts/deslop_filter.py input.txt --output clean.txt
+python scripts/deslop_filter.py input.txt --check-only --json
+```
+
+### 2. Verified Fact Knowledge Cache (`scripts/fact_cache.py`)
+Key-value storage with configurable TTL (default 24h) to avoid re-searching verified propositions:
+```bash
+python scripts/fact_cache.py set "iphone-15-pro-price" '{"price": 31500, "source": "Greenhills"}' --ttl 86400
+python scripts/fact_cache.py get "iphone-15-pro-price"
+python scripts/fact_cache.py list
+```
+
+### 3. Precision Calculator & CI Mode (`scripts/safe_score.py`)
+Computes SAFE precision scores with claim-level breakdowns, JSON output, and CI failure thresholds:
+```bash
+python scripts/safe_score.py input_claims.txt --json
+python scripts/safe_score.py input_claims.txt --ci 80.0
+```
+
+### 4. Multi-Engine Scraper & Scout (`scripts/browser_fetch.py`)
+Fast Playwright engine with DuckDuckGo + Bing search lead discovery:
+```bash
+python scripts/browser_fetch.py --scout "iphone 15 pro greenhills price" --concurrency 3
+python scripts/browser_fetch.py https://example.com --headed --json-out out.json
+```
 
 ---
 

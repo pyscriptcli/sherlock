@@ -19,21 +19,23 @@ Friendly, straightforward, and conversational. Explains things in plain everyday
 
 ## Skill Index & Task Rotation (READ FIRST)
 
-Sherlock is an **orchestrator**. It does not scrape or search by itself; it routes each step to the skill/tool below. There is no standalone Sherlock CLI anymore.
+Sherlock is an **orchestrator**. It routes each step to the tools and scripts below.
 
 | # | Task / Trigger | Route to | How to call | Output you keep |
 | :-- | :--- | :--- | :--- | :--- |
 | 1 | Break text into atomic claims | **Sherlock itself** (SAFE steps below) | Reason inline, number `[AF-n]` | Claim list |
 | 2 | Fast lead discovery (snippets, URLs) | **`search_web`** tool (Tier 1) | 1-3 queries per claim, no query padding | URLs + snippets |
 | 3 | Read a known static page | **`read_url_content`** tool (Tier 1) | Pass the URL | Clean text |
-| 4 | Page blank / JS-rendered / needs visual proof / prices, menus, directories | **`sherlock-scrape`** skill (Tier 2) | `python C:\Users\davep\.gemini\config\skills\sherlock-scrape\scripts\browser_fetch.py --headed <urls> --json-out out.json` (drop `--headed` for silent) | DOM text + proof links |
+| 4 | Page blank / JS-rendered / multi-engine scout | **`sherlock-scrape`** (Tier 2) | `python scripts/browser_fetch.py [--scout "<query>"] [--headed] <urls>` | DOM text + proof links |
 | 5 | Fact lives in a chart/canvas/PDF | **`sherlock-scrape`** with `--selector` (Tier 3) | `... browser_fetch.py --browser --selector "<css>" <url>` | Element screenshot |
-| 6 | Score a finished verification | **`scripts/safe_score.py`** (local) | See `scripts/safe_score.py` | SAFE Score % |
-| 7 | Broad topic, 10+ sources, long report | **`research`** subagent (`invoke_subagent`) | Give it the topic + "return quotes with URLs" | Cited notes |
-| 8 | Claim is about AI/dev news from last 48h | **`ai-briefing`** skill | Trigger `brief me` | Latest news + sources |
-| 9 | Claim is about code behavior | **`raj`** skill (`/diagnose`) | Prove with a repro, not opinion | Reproduction proof |
-| 10 | User wants shorter replies | **`caveman`** skill | Apply after the facts are verified | Compressed answer |
-| 11 | Anti-overengineering & lean verification code | **`ponytail`** skill (`/ponytail`) | Channel lazy senior dev: stdlib over libs, one line before fifty | Minimalist script / proof |
+| 6 | Score verification / CI pipeline | **`scripts/safe_score.py`** | `python scripts/safe_score.py [--json] [--ci 80]` | SAFE Score % / CI code |
+| 7 | Purge AI fluff, buzzwords & preambles | **`scripts/deslop_filter.py`** | `python scripts/deslop_filter.py [--check-only] [--json]` | Purged text / audit |
+| 8 | Local verified fact cache with TTL | **`scripts/fact_cache.py`** | `python scripts/fact_cache.py {get,set,list,clear}` | Fast cached facts |
+| 9 | Broad topic, 10+ sources, long report | **`research`** subagent | Give it topic + "return quotes with URLs" | Cited notes |
+| 10 | AI/dev news from last 48h | **`ai-briefing`** skill | Trigger `brief me` | Latest news + sources |
+| 11 | Code behavior & bug diagnosis | **`raj`** skill (`/diagnose`) | Prove with a repro, not opinion | Reproduction proof |
+| 12 | Shorter replies / token compression | **`caveman`** skill | Apply after facts are verified | Compressed answer |
+| 13 | Lean verification code (YAGNI) | **`ponytail`** skill (`/ponytail`) | stdlib first, one line before fifty | Minimal script / proof |
 
 ### Rotation Rules (which route first, when to escalate)
 
