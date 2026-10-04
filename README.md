@@ -87,6 +87,8 @@ Sherlock serves as the **Master Orchestrator**. It evaluates incoming tasks, ext
 sherlock/
 ├── SKILL.md                          # Master Orchestrator prompt & routing index
 ├── README.md                         # Architecture overview and documentation
+├── sherlock-scrape.bat               # Interactive 1-click Windows desktop visual scraper
+├── sherlock_scrape.py                # 2-Phase Scout & Headed DOM validator CLI
 ├── LICENSE                           # MIT License
 ├── references/                       # Conceptual guides & protocols
 │   ├── safe_framework.md             # SAFE factuality evaluation methodology
@@ -167,6 +169,17 @@ async with SherlockBrowser(headed=True) as engine:
     leads = await engine.visual_search("apple iphone specs")
     results = await engine.scrape_batch(leads)
 ```
+
+### 5. 1-Click Desktop Scraper (`sherlock-scrape.bat` / `sherlock_scrape.py`)
+Run directly in your Windows terminal or double-click to watch the headed browser open on your desktop:
+```bash
+# Run with a natural language query:
+.\sherlock-scrape.bat "always yours never mine ticket in cinemas price"
+
+# Or run with no arguments for an interactive input prompt:
+.\sherlock-scrape.bat
+```
+*Logic: Phase 1 conducts search reconnaissance to discover primary sources -> Phase 2 opens headed Chromium on your desktop to validate the live DOM.*
 
 ---
 
