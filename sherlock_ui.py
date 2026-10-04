@@ -344,20 +344,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       border-color: var(--border-focus);
     }
 
-    .perplexity-input-box textarea {
+    .perplexity-input-box input#heroInput {
       width: 100%;
       background: transparent;
       border: none;
       outline: none;
       color: var(--text-primary);
-      font-size: 15px;
+      font-size: 16px;
       font-family: inherit;
-      resize: none;
-      min-height: 48px;
-      max-height: 120px;
+      padding: 6px 0;
     }
 
-    .perplexity-input-box textarea::placeholder {
+    .perplexity-input-box input#heroInput::placeholder {
       color: var(--text-muted);
     }
 
@@ -819,13 +817,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       </div>
 
       <!-- Main Input Box (Matching Inspo) -->
-      <div class="perplexity-input-box">
-        <textarea 
+      <form class="perplexity-input-box" onsubmit="event.preventDefault(); submitHeroQuery();">
+        <input 
+          type="text" 
           id="heroInput" 
           placeholder="Ask anything or verify live facts..." 
-          onkeydown="handleHeroKey(event)"
-          rows="2"
-        ></textarea>
+          autocomplete="off"
+          autofocus
+        >
 
         <div class="input-bottom-bar">
           <div class="pill-group">
@@ -840,12 +839,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           </div>
 
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="submit-circle-btn" id="heroSubmitBtn" onclick="submitHeroQuery()" title="Send">
+            <button type="submit" class="submit-circle-btn" id="heroSubmitBtn" title="Send">
               <svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
             </button>
           </div>
         </div>
-      </div>
+      </form>
 
       <!-- Dual Action Cards (Matching Inspo) -->
       <div class="hero-cards-grid">
@@ -940,17 +939,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       <!-- Docked Bottom Input Bar (Active State) -->
       <div class="docked-bottom-bar">
-        <div class="docked-input-inner">
+        <form class="docked-input-inner" onsubmit="event.preventDefault(); submitDockedQuery();">
           <input 
             type="text" 
             id="dockedInput" 
             placeholder="Ask a follow-up or verify another claim..." 
-            onkeydown="handleDockedKey(event)"
+            autocomplete="off"
           >
-          <button class="submit-circle-btn" style="width: 28px; height: 28px;" onclick="submitDockedQuery()" title="Send">
+          <button type="submit" class="submit-circle-btn" style="width: 28px; height: 28px;" title="Send">
             <svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
           </button>
-        </div>
+        </form>
       </div>
     </div>
   </div>
@@ -959,26 +958,36 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     let ws = null;
     let fullMarkdownOutput = "";
     let activeMode = "sherlock-scrape";
+    let pendingPayload = null;
 
     function initWebSocket() {
       const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${proto}//${window.location.host}/ws`);
 
       ws.onopen = () => {
-        document.getElementById("statusDot").style.backgroundColor = "var(--accent-emerald)";
-        document.getElementById("connLabel").textContent = "Connected";
+        const dot = document.getElementById("statusDot");
+        if (dot) dot.style.backgroundColor = "var(--accent-emerald)";
+        const label = document.getElementById("connLabel");
+        if (label) label.textContent = "Connected";
         addLog("WebSocket connection online.");
+        if (pendingPayload) {
+          addLog("Sending queued investigation request...");
+          ws.send(JSON.stringify(pendingPayload));
+          pendingPayload = null;
+        }
       };
 
       ws.onclose = () => {
-        document.getElementById("statusDot").style.backgroundColor = "var(--text-muted)";
-        document.getElementById("connLabel").textContent = "Disconnected";
+        const dot = document.getElementById("statusDot");
+        if (dot) dot.style.backgroundColor = "var(--text-muted)";
+        const label = document.getElementById("connLabel");
+        if (label) label.textContent = "Disconnected";
         addLog("WebSocket disconnected. Reconnecting in 2s...");
         setTimeout(initWebSocket, 2000);
       };
 
       ws.onerror = (err) => {
-        addLog(`WebSocket error: ${err}`);
+        addLog(`WebSocket connection notice.`);
       };
 
       ws.onmessage = (event) => {
@@ -1098,14 +1107,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     function executeInvestigation(query) {
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        alert("WebSocket is reconnecting. Please wait 2 seconds...");
-        return;
-      }
-
       showStudioView();
 
-      document.getElementById("heroSubmitBtn").disabled = true;
+      const heroBtn = document.getElementById("heroSubmitBtn");
+      if (heroBtn) heroBtn.disabled = true;
       document.getElementById("answerContent").textContent = "Investigation initiated. Conducting search scout and launching browser session...";
       document.getElementById("safeScoreBadge").textContent = "SAFE Score: Working...";
       document.getElementById("viewportStatusText").textContent = "Launching live browser session...";
@@ -1113,13 +1118,23 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       addLog(`Investigation started: "${query}"`);
 
-      ws.send(JSON.stringify({
+      const payload = {
         action: "start",
         skill: activeMode,
         query: query,
         anti_slop: true,
         use_cache: true
-      }));
+      };
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(payload));
+      } else {
+        pendingPayload = payload;
+        addLog("Connecting WebSocket to launch investigation...");
+        if (!ws || ws.readyState === WebSocket.CLOSED) {
+          initWebSocket();
+        }
+      }
     }
 
     function copyMarkdown() {
