@@ -26,12 +26,16 @@ Whenever Sherlock needs to pull evidence from a webpage or URL, it follows these
 - If the page is static and clean, extract the exact text directly.
 - If the text is clear and answers the question, stop here. No browser overhead needed.
 
-### Tier 2: Live Browser DOM and Accessibility Tree (Dynamic Pages)
+### Tier 2: Live Browser DOM & Accessibility Tree (Dynamic Pages via Playwright)
 If a page renders blank, hides text behind JavaScript, or uses a modern frontend framework (like React or Next.js):
-- Load the page in a headless browser (like Playwright).
-- Wait for the network to settle and JavaScript to finish running.
-- Extract the text directly from the browser's live DOM or Accessibility Tree.
-- Do not take a screenshot of the words. Just pull the clean text string straight from the browser memory.
+- Load the page using the optimized Playwright engine (`scripts/browser_fetch.py --browser`).
+- **Golden Rule 1 (Browser Reuse & Contexts):** Keep one browser instance alive; spawn lightweight `browser.new_context()` per request and dispose it immediately to reclaim RAM.
+- **Golden Rule 2 (Asset Interception):** Intercept and abort images, media, and fonts (`page.route`) to cut load times by 50–70% and slash memory usage.
+- **Golden Rule 3 (Targeted Waits):** Navigate with `domcontentloaded` and wait only for target selectors (e.g. `.menu`, `.price`) rather than hanging on `networkidle`.
+- **Golden Rule 4 (Stealth Hygiene):** Mask `navigator.webdriver` and use anti-bot flags (`--disable-blink-features=AutomationControlled`) with realistic user agents.
+- **Golden Rule 5 (Concurrency Capping):** Cap parallel contexts using `asyncio.Semaphore` (default: 4 workers) to avoid CPU throttling.
+- Extract the text directly from the browser's live DOM (`document.body.innerText`).
+- Do not take screenshots of plain text; pull clean strings straight from memory.
 
 ### Tier 3: Targeted Screenshot and OCR (Visual Assets Only)
 If the required fact is inside a graphic (like an interactive stock chart, an SVG graph, an infographic, or a scanned PDF):

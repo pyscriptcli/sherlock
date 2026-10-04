@@ -1,0 +1,31 @@
+{
+  "name": "deslop",
+  "version": "1.0.0",
+  "description": "Detect and remove AI-generated code patterns (slop) from your branches",
+  "main": "index.js",
+  "type": "module",
+  "bin": {
+    "deslop": "./bin/deslop.js"
+  },
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "ai",
+    "code-quality",
+    "slop",
+    "cleanup",
+    "git",
+    "refactoring",
+    "lint"
+  ],
+  "author": "dabit3",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dabit3/deslop.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

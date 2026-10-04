@@ -1,0 +1,258 @@
+---
+/**
+ * Floating table of contents — a right-edge minimap in the Codex style.
+ *
+ * Collapsed: one hairline tick per catalogue entry (short ticks for the prose
+ * sections), grouped by the catalogue's own groups, with the current position
+ * inked. Hover or keyboard focus swaps the ticks for a card panel listing
+ * every entry by number and title; a scroll-spy keeps both in sync.
+ *
+ * Shown only where it has room of its own (≥82rem), never over content.
+ */
+import T from "./T.astro";
+import { catalogue, GROUPS, type Group } from "../data/catalogue";
+
+const sectionsBefore = [
+  { id: "what", label: { en: "Definition", zh: "定义", ja: "定義", ko: "정의" } },
+];
+const sectionsAfter = [
+  { id: "principles", label: { en: "Principles", zh: "原则", ja: "原則", ko: "원칙" } },
+  { id: "skill", label: { en: "The cleanup skill", zh: "清理 Skill", ja: "クリーンアップ Skill", ko: "정리 Skill" } },
+];
+
+// Entries in page order, tagging each one that starts a new group so both the
+// tick column and the panel can breathe at group boundaries.
+let prevGroup: Group | null = null;
+const entries = catalogue.map((e) => {
+  const groupStart = e.group !== prevGroup;
+  prevGroup = e.group;
+  return { e, groupStart };
+});
+---
+
+<nav class="toc" id="kas-toc" aria-label="On this page">
+  <div class="ticks" aria-hidden="true">
+    {sectionsBefore.map((s) => <span class="tick s" data-for={s.id}></span>)}
+    {entries.map(({ e, groupStart }) => (
+      <span class:list={["tick", { gs: groupStart }]} data-for={e.id}></span>
+    ))}
+    {sectionsAfter.map((s) => <span class="tick s gs" data-for={s.id}></span>)}
+  </div>
+
+  <div class="panel">
+    {sectionsBefore.map((s) => (
+      <a class="item sec" href={`#${s.id}`}><span class="tt"><T {...s.label} /></span></a>
+    ))}
+    {entries.map(({ e, groupStart }) => (
+      <>
+        {groupStart && <p class="gh"><T {...GROUPS[e.group]} /></p>}
+        <a class="item" href={`#${e.id}`}>
+          <span class="no">{String(e.n).padStart(2, "0")}</span>
+          <span class="tt"><T {...e.title} /></span>
+        </a>
+      </>
+    ))}
+    <div class="tail">
+      {sectionsAfter.map((s) => (
+        <a class="item sec" href={`#${s.id}`}><span class="tt"><T {...s.label} /></span></a>
+      ))}
+    </div>
+  </div>
+</nav>
+
+<style>
+  .toc {
+    display: none;
+    position: fixed;
+    right: 1.1rem;
+    top: 50%;
+    translate: 0 -50%;
+    z-index: 40;
+    /* A little grace around the ticks so the hover target isn't hairline-thin. */
+    padding: 0.6rem 0.2rem 0.6rem 1.2rem;
+  }
+  /* Only where the rail has its own margin beside the 76rem container. */
+  @media (min-width: 82rem) {
+    .toc { display: block; }
+  }
+
+  /* ── Collapsed: the tick minimap ─────────────────────────────────────── */
+  .ticks {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    transition: opacity 0.15s var(--ease);
+  }
+  .tick {
+    width: 14px;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--rule-strong);
+    transition:
+      width 0.18s var(--ease),
+      background-color 0.18s var(--ease);
+  }
+  .tick.s { width: 8px; }
+  .tick.gs { margin-top: 6px; }
+  .tick.on {
+    width: 22px;
+    background: var(--ink);
+  }
+  .toc:hover .ticks,
+  .toc:focus-within .ticks {
+    opacity: 0;
+  }
+
+  /* ── Expanded: the panel ─────────────────────────────────────────────── */
+  .panel {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    translate: 6px -50%;
+    width: 16.5rem;
+    max-height: min(76vh, 42rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--card);
+    border: var(--hair) solid var(--rule);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-e2);
+    padding: 0.55rem;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.16s var(--ease),
+      translate 0.16s var(--ease),
+      visibility 0.16s;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule-strong) transparent;
+  }
+  .toc:hover .panel,
+  .toc:focus-within .panel {
+    opacity: 1;
+    visibility: visible;
+    translate: 0 -50%;
+  }
+
+  .gh {
+    margin: 0;
+    padding: 0.6rem 0.6rem 0.25rem;
+    font-size: 0.62rem;
+    font-weight: 620;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .item {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.28rem 0.6rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    font-size: var(--step--1);
+    line-height: 1.35;
+    color: var(--ink-2);
+    transition:
+      background-color 0.12s var(--ease),
+      color 0.12s var(--ease);
+  }
+  .item:hover {
+    background: var(--paper-2);
+    color: var(--ink);
+  }
+  .item.sec {
+    font-weight: 560;
+    color: var(--ink);
+  }
+  .item .no {
+    flex: none;
+    min-width: 1.35rem;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.7rem;
+    color: var(--ink-3);
+    transition: color 0.12s var(--ease);
+  }
+  .item.on {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .item.on .no { color: var(--ink); }
+  /* The current item carries a short ink bar — position, marked in ink,
+     never in color (chrome stays monochrome). */
+  .item.on::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 22%;
+    bottom: 22%;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--ink);
+  }
+  .tail {
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
+    border-top: var(--hair) solid var(--rule);
+  }
+</style>
+
+<script>
+  const toc = document.getElementById("kas-toc");
+  if (toc) {
+    const links = Array.from(toc.querySelectorAll<HTMLAnchorElement>("a.item"));
+    const panel = toc.querySelector<HTMLElement>(".panel")!;
+    const ticks = new Map(
+      Array.from(toc.querySelectorAll<HTMLElement>(".tick")).map((t) => [
+        t.dataset.for!,
+        t,
+      ]),
+    );
+    const targets = links
+      .map((a) => {
+        const id = decodeURIComponent(a.hash.slice(1));
+        const el = document.getElementById(id);
+        return el ? { id, el, a } : null;
+      })
+      .filter((t): t is NonNullable<typeof t> => t !== null);
+
+    let current = "";
+    const setActive = (id: string) => {
+      if (id === current) return;
+      current = id;
+      for (const t of targets) {
+        const on = t.id === id;
+        t.a.classList.toggle("on", on);
+        ticks.get(t.id)?.classList.toggle("on", on);
+        // Keep the active row in view when the panel is open but not under the
+        // pointer (never yank the list while the user is browsing it).
+        if (on && !panel.matches(":hover")) {
+          panel.scrollTop =
+            t.a.offsetTop - panel.clientHeight / 2 + t.a.offsetHeight / 2;
+        }
+      }
+    };
+
+    // Scroll-spy: the active item is the last one whose top has crossed the
+    // upper third of the viewport (matches where a reader's eyes settle).
+    let raf = 0;
+    const spy = () => {
+      raf = 0;
+      const line = window.innerHeight * 0.33;
+      let active = targets[0]?.id ?? "";
+      for (const t of targets) {
+        if (t.el.getBoundingClientRect().top <= line) active = t.id;
+        else break;
+      }
+      setActive(active);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(spy);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    spy();
+  }
+</script>

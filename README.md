@@ -79,25 +79,51 @@ Sherlock automatically picks the right mode based on what you ask:
 
 ---
 
-## Repository Structure
+## Orchestration & Sub-Skills Architecture
 
-```text
-sherlock/
-├── SKILL.md                          # Main skill instructions
-├── README.md                         # Documentation and setup
-├── LICENSE                           # MIT License
-├── references/
-│   ├── safe_framework.md             # Background guide on the SAFE method
-│   └── retrieval_strategy.md         # Guide to the 3-tier retrieval protocol
-├── examples/
-│   └── sample_verification.md        # Example walkthroughs
-├── evals/
-│   ├── eval_cases.json               # Benchmark test cases
-│   └── run_eval.py                   # Evaluation test runner
-└── scripts/
-    ├── safe_score.py                 # Standalone score calculator
-    └── browser_fetch.py              # 3-tier text & browser extraction tool
+Sherlock serves as the **Master Orchestrator**. It evaluates incoming tasks, extracts atomic propositions, and rotates work across specialized sub-skills categorized by use case inside the [`skills/`](skills/) folder:
+
 ```
+sherlock/
+├── SKILL.md                          # Master Orchestrator prompt & routing index
+├── README.md                         # Architecture overview and documentation
+├── LICENSE                           # MIT License
+├── references/                       # Conceptual guides & protocols
+│   ├── safe_framework.md             # SAFE factuality evaluation methodology
+│   └── retrieval_strategy.md         # 3-tier evidence retrieval hierarchy
+├── evals/                            # Evaluation benchmark suite
+│   ├── eval_cases.json
+│   └── run_eval.py
+├── scripts/                          # Sherlock core utilities
+│   ├── safe_score.py                 # Factual precision calculator
+│   └── browser_fetch.py              # Playwright DOM text & element screenshot tool
+└── skills/                           # Cloned & categorized sub-skills ecosystem
+    ├── factuality_verification/      # Category 1: Atomic fact checkers
+    │   ├── long-form-factuality/     # Google DeepMind SAFE & LongFact benchmark
+    │   └── factscore/                # FActScore atomic proposition evaluator
+    ├── research_synthesis/           # Category 2: Autonomous research engines
+    │   ├── storm/                    # Stanford STORM multi-perspective RAG
+    │   └── open-deep-research/       # LangChain iterative multi-agent research
+    ├── scraping_automation/          # Category 3: Ground-truth web extractors
+    │   ├── sherlock-scrape/          # Visual headed Playwright DOM sniper
+    │   └── crawl4ai/                 # High-throughput LLM crawler for Markdown
+    └── anti_slop/                    # Category 4: Anti-bloat & prose sanitizers
+        ├── kill-ai-slop/             # AI tics & prose fluff filter
+        ├── deslop/                   # Git diff & code cleaner
+        ├── aislop/                   # Deterministic prose linter
+        └── ponytail/                 # Senior dev YAGNI & standard library ladder
+```
+
+---
+
+## Sub-Skill Categories
+
+| Category | Contained Modules | Role in Orchestration |
+| :--- | :--- | :--- |
+| **1. Factuality & Verification** | `long-form-factuality`, `factscore` | Breaks sentences into atomic claims and verifies against factual knowledge bases. |
+| **2. Research & Synthesis** | `storm`, `open-deep-research` | Drives multi-angle research, expert persona inquiries, and cited report outlines. |
+| **3. Scraping Automation** | `sherlock-scrape`, `crawl4ai` | Live visual browser execution with Playwright; outputs yellow-highlighted Chrome proof links. |
+| **4. Anti-Slop & De-bloat** | `kill-ai-slop`, `deslop`, `aislop`, `ponytail` | Eliminates filler phrases, delivers answers first, and enforces minimal, standard-library code. |
 
 ---
 

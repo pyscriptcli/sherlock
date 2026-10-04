@@ -1,0 +1,182 @@
+/*
+  Kill AI Slop — design tokens.
+
+  The whole site is an argument, so the tokens are the argument made concrete.
+  Rules we hold ourselves to (and enforce in the skill):
+
+  - The site is monochrome: ink on paper. Colour is spent ONLY on the verdict,
+    the way a code diff spends it — red = slop, green = the fix. Never on chrome
+    (numbers, nav, structure stay ink), never on decoration, never a gradient.
+    (An early draft leaked a warm orange-red into the chrome — the exact "one
+    warm accent" tic we mock, and the same family as the specimen's coral. Cooled
+    to a correction-red and confined to the verdict.)
+  - No blue→purple gradient. No amber/stone "cozy" wash. No rainbow text.
+  - Hierarchy comes from scale, weight, and space — not from swapping to a
+    serif or coloring a keyword mid-sentence.
+  - Modest, consistent radius. Hairline rules instead of drop shadows.
+  - Monospace is for code only. It is not chrome.
+*/
+
+:root {
+  /* --- Paper & ink -------------------------------------------------------
+     A near-neutral paper pulled a hair cool — enough to shed the old warm
+     cast (never the "warm brown cozy" slop), not so far it reads as clinical
+     grey. Each value keeps its original lightness; only the hue shifts from a
+     faint yellow to a faint blue. Ink is close to black but not pure, for a
+     printed feel. (Dark mode is intentionally left as-is.) */
+  --paper: #f6f7fb;        /* luminous paper — lifted out of the old muddy cool
+                              grey so it reads as lit paper, not an admin panel.
+                              Same faint-cool hue, more light in it. */
+  --paper-2: #ebedf3;      /* recessed panels */
+  --card: #ffffff;         /* crisp true white — the card now genuinely lifts off
+                              the paper on its hairline + tight contact shadow,
+                              the way a printed card sits on a page. (Was a soft
+                              off-white that barely separated from the ground.) */
+  --ink: #14151a;          /* deep near-black, faintly cool — deepened for the
+                              crisp ink-on-paper contrast that reads as premium */
+  --ink-2: #53555d;        /* secondary text, pulled out of grey washout */
+  --ink-3: #797c86;        /* meta, captions */
+  --rule: #e6e8ef;         /* hairline rules & borders */
+  --rule-strong: #cccfd9;
+
+  /* --- The mark ---------------------------------------------------------
+     Ink on bone paper is the identity; the one colour is a deep, muted pine
+     green (墨绿), the timeless high-end note against neutrals. Spent sparingly —
+     only to mark the slop, never as chrome. Deliberately clear of the specimen's
+     coral and of every slop family (no violet, no amber, no bright anything).
+     "Clean" carries no colour of its own; clean is simply unmarked. */
+  --mark: #246a50;         /* deep emerald-pine — flags the slop. Lifted from the
+                              old #2c4a3d, which read near-black on light paper:
+                              that value was both dark (L≈29) and desaturated
+                              (C≈15), so its green was invisible. Same pine hue,
+                              now L≈40 / C≈30 — legibly green, still deep and
+                              refined (white text on it clears ~6:1). */
+  --mark-soft: #dde7e0;    /* faint green wash */
+  /* The specimen's own coral, used deliberately as commentary: in a before/after,
+     the slop side is coloured in the colour of slop, the clean side in ours. */
+  --slop: #ff5c5c;
+
+  /* --- Type -------------------------------------------------------------
+     A clean, confident sans. The thesis is that you do not need an exotic
+     font to avoid slop — you need intention. Monospace is reserved for code. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code",
+    Menlo, Consolas, monospace;
+
+  /* Modular scale (~1.2). Restrained, editorial — refinement over bigness.
+     Display caps kept deliberately modest so nothing reads as template-hero. */
+  --step--1: clamp(0.78rem, 0.76rem + 0.08vw, 0.82rem);
+  --step-0: clamp(0.94rem, 0.92rem + 0.1vw, 1rem);
+  --step-1: clamp(1.05rem, 1rem + 0.24vw, 1.18rem);
+  --step-2: clamp(1.25rem, 1.14rem + 0.5vw, 1.55rem);
+  --step-3: clamp(1.5rem, 1.3rem + 0.9vw, 2rem);
+  --step-4: clamp(1.85rem, 1.5rem + 1.5vw, 2.6rem);
+  --step-5: clamp(2.2rem, 1.75rem + 2.2vw, 3.2rem);
+
+  /* --- Space (8px base) -------------------------------------------------- */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4.5rem;
+  --s-9: 7rem;
+
+  /* --- Structure --------------------------------------------------------- */
+  --measure: 68ch;         /* readable prose width */
+  --container: 76rem;
+  --radius-sm: 5px;        /* chips, tags, code pills, small controls — the
+                              inner tier of the nesting scale (see the
+                              "corners that don't nest" tell: inner < outer). */
+  --radius: 8px;           /* Linear's control radius. Reverse-engineered from
+                              the running app: 8px is by far its dominant corner
+                              (buttons, segmented controls, list rows, nav).
+                              Not a pill for chrome — a modest, consistent 8.
+                              These tokens existed but the site's own chrome was
+                              hardcoding `border-radius: 0` against them; the
+                              corners are now wired back to the scale they define
+                              — softened edges are where restraint turns elegant. */
+  --radius-lg: 12px;        /* Linear's larger surfaces — its modal/dialog radius */
+  --hair: 1px;
+
+  /* Elevation — measured off the live Linear app, not guessed. Linear lifts a
+     panel with a 1px ring (here: the card's hairline border) plus a *tight*
+     contact shadow — a small 4px blur pulled in with a negative spread, over a
+     faintly recessed canvas. Never a diffuse drop, never a glow. Its own popover
+     shadow resolves to `0 4px 4px -1px rgba(0,0,0,.04), 0 1px 1px rgba(0,0,0,.08)`;
+     e2 mirrors that shape. */
+  --shadow-e1: 0 1px 2px rgba(20, 21, 26, 0.05);
+  --shadow-e2:
+    0 1px 1px rgba(20, 21, 26, 0.07), 0 4px 10px -3px rgba(20, 21, 26, 0.07);
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  /* A softer decelerate for entrances — content arrives quickly then settles,
+     the unmistakable cadence of a considered interface. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* On high-density displays a CSS half-pixel resolves to a single device pixel —
+   the finest rule the panel can draw. Every hairline on the site sharpens at
+   once; 1x screens keep the 1px fallback. */
+@media (min-resolution: 1.5dppx) {
+  :root {
+    --hair: 0.5px;
+  }
+}
+
+/*
+  A deliberately restrained dark mode: still paper-and-ink logic, just
+  inverted. We keep the single red accent. No neon glow.
+
+  The palette follows the OS by default, but the header's theme toggle can force
+  it: dark applies when the OS prefers dark AND the user hasn't forced light, OR
+  when the user has forced dark. Light is the :root default above, so "force
+  light" simply means "don't apply dark." The two selectors below must carry the
+  identical token set — CSS can't OR a media query with a plain selector.
+  `color-scheme` is set so native controls (the language <select>'s option list,
+  scrollbars) follow the forced theme too.
+*/
+:root {
+  color-scheme: light dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131316;
+    --paper-2: #1b1c20;
+    --card: #202127;
+    --ink: #ecebe6;
+    --ink-2: #a9a8a2;
+    --ink-3: #7f7d78;
+    --rule: #2c2d33;
+    --rule-strong: #3d3e45;
+    --mark: #6faa8e;
+    --mark-soft: #1e2f28;
+    --shadow-e1: 0 1px 1px rgba(0, 0, 0, 0.4);
+    --shadow-e2: 0 1px 1px rgba(0, 0, 0, 0.5), 0 4px 4px -1px rgba(0, 0, 0, 0.3);
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #131316;
+  --paper-2: #1b1c20;
+  --card: #202127;
+  --ink: #ecebe6;
+  --ink-2: #a9a8a2;
+  --ink-3: #7f7d78;
+  --rule: #2c2d33;
+  --rule-strong: #3d3e45;
+  --mark: #6faa8e;
+  --mark-soft: #1e2f28;
+  --shadow-e1: 0 1px 1px rgba(0, 0, 0, 0.4);
+  --shadow-e2: 0 1px 1px rgba(0, 0, 0, 0.5), 0 4px 4px -1px rgba(0, 0, 0, 0.3);
+}
