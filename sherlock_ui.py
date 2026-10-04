@@ -3,13 +3,14 @@
 Sherlock Investigation Studio - Perplexity-Inspired Local Web UI
 Spearheaded by Penny (UI/UX) with Sherlock (Factuality & Verification Engine)
 
-Architectural Standards:
-- Zero emojis: 100% inline monochrome SVG icons
-- Chatbox docked at bottom (Perplexity layout)
-- Left sidebar with skills roster (/sherlock, /sherlock-scrape, /safe, /fact-cache, /anti-slop)
-- Live Playwright CDP screencasting over non-blocking WebSocket
-- Anti-slop strictness: Direct answers first, zero marketing fluff, no gimmick badges
-- Layout immunity (min-w-0, zero overlapping elements, responsive grid)
+Layout Inspired Directly by Perplexity / Computer UI:
+- Minimalist charcoal aesthetic (#141515, #1B1C1C, #232525)
+- Left sidebar with + New, Skills, Sessions, and Cache
+- Centered Hero State with 'What do you want to know?', input card, and dual action cards
+- Seamless transition to Dual-Pane Live Browser Viewport (CDP Screencast) + Ground-Truth Evidence
+- Docked bottom chatbox in active state
+- Zero emojis: 100% clean monochrome SVG icons
+- Non-blocking async WebSocket with Playwright CDP screencasting
 """
 
 import sys
@@ -34,7 +35,7 @@ if SCRIPTS_DIR not in sys.path:
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from scripts.fact_cache import get_cached_fact, set_cached_fact, _load_cache, clear_expired
+from scripts.fact_cache import get_cached_fact, set_cached_fact, _load_cache
 from scripts.deslop_filter import deslop_text
 from scripts.safe_score import calculate_safe_score
 from sherlock_scrape import scout_search_leads
@@ -50,26 +51,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sherlock Investigation Studio</title>
+  <title>Sherlock</title>
   <style>
     :root {
-      --bg-root: #131414;
-      --bg-sidebar: #191A1A;
-      --bg-main: #1C1D1D;
-      --bg-card: #242626;
+      --bg-root: #141515;
+      --bg-sidebar: #171818;
+      --bg-card: #202222;
       --bg-input: #232525;
-      --border: #323535;
-      --border-focus: #484C4C;
+      --bg-chip: #2A2C2C;
+      --border: #2D3030;
+      --border-focus: #464A4A;
       --text-primary: #EDEDED;
       --text-secondary: #9E9E9E;
       --text-muted: #6B7070;
       --accent-teal: #20B8CD;
-      --accent-teal-dark: #158391;
+      --accent-teal-soft: rgba(32, 184, 205, 0.12);
       --accent-emerald: #10B981;
       --accent-crimson: #EF4444;
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       --font-mono: "Fira Code", "SF Mono", Consolas, monospace;
-      --sidebar-width: 250px;
+      --sidebar-width: 240px;
     }
 
     * {
@@ -89,7 +90,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       display: flex;
     }
 
-    /* Left Skills Sidebar */
+    /* Left Sidebar */
     aside.sidebar {
       width: var(--sidebar-width);
       background-color: var(--bg-sidebar);
@@ -98,156 +99,433 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       flex-direction: column;
       flex-shrink: 0;
       z-index: 10;
+      user-select: none;
     }
 
-    .sidebar-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
+    .sidebar-top {
+      padding: 16px;
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: -0.01em;
+      justify-content: space-between;
     }
 
-    .sidebar-header svg {
-      width: 20px;
-      height: 20px;
-      stroke: var(--accent-teal);
+    .brand-icon {
+      width: 22px;
+      height: 22px;
+      stroke: var(--text-primary);
       stroke-width: 2;
       fill: none;
     }
 
-    .sidebar-section {
-      padding: 14px 12px 6px 16px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+    .icon-btn {
+      background: transparent;
+      border: none;
       color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s ease;
     }
 
-    .skills-menu {
+    .icon-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+    }
+
+    .btn-new-chat {
+      margin: 4px 12px 12px 12px;
+      padding: 8px 12px;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-new-chat:hover {
+      border-color: var(--border-focus);
+      background-color: #272929;
+    }
+
+    .btn-new-chat svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      fill: none;
+    }
+
+    .nav-list {
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 2px;
       padding: 0 8px;
-      overflow-y: auto;
-      flex: 1;
     }
 
-    .skill-item {
+    .nav-item {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 8px 10px;
       border-radius: 6px;
       color: var(--text-secondary);
       font-size: 13px;
       cursor: pointer;
-      text-decoration: none;
       transition: all 0.15s ease;
-      border: 1px solid transparent;
     }
 
-    .skill-item:hover {
+    .nav-item:hover {
       background-color: var(--bg-card);
       color: var(--text-primary);
     }
 
-    .skill-item.active {
-      background-color: rgba(32, 184, 205, 0.1);
-      border-color: rgba(32, 184, 205, 0.25);
-      color: var(--accent-teal);
+    .nav-item.active {
+      background-color: var(--bg-card);
+      color: var(--text-primary);
       font-weight: 500;
     }
 
-    .skill-item svg {
+    .nav-item svg {
       width: 16px;
       height: 16px;
       stroke: currentColor;
-      stroke-width: 2;
+      stroke-width: 1.8;
       fill: none;
       flex-shrink: 0;
     }
 
-    .sidebar-footer {
-      padding: 14px 16px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    .nav-divider {
+      height: 1px;
+      background-color: var(--border);
+      margin: 12px 16px;
+    }
+
+    .nav-section-title {
+      padding: 6px 14px;
       font-size: 11px;
+      font-weight: 600;
       color: var(--text-muted);
-    }
-
-    /* Main Content Area */
-    .main-wrapper {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-      min-width: 0;
-      background-color: var(--bg-main);
-    }
-
-    /* Top Bar */
-    header.topbar {
-      padding: 12px 24px;
-      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background-color: var(--bg-sidebar);
-      flex-shrink: 0;
+      cursor: pointer;
     }
 
-    .active-mode-badge {
-      font-family: var(--font-mono);
+    .nav-section-title svg {
+      width: 12px;
+      height: 12px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .nav-subtext {
+      padding: 4px 14px 10px 14px;
       font-size: 12px;
-      color: var(--accent-teal);
-      background-color: rgba(32, 184, 205, 0.1);
-      border: 1px solid rgba(32, 184, 205, 0.25);
-      padding: 3px 10px;
-      border-radius: 4px;
+      color: var(--text-muted);
+    }
+
+    .sidebar-bottom {
+      margin-top: auto;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .sidebar-bottom .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
     }
 
     .status-dot {
       width: 6px;
       height: 6px;
-      background-color: var(--accent-teal);
-      border-radius: 50%;
-    }
-
-    .status-dot.active {
       background-color: var(--accent-emerald);
+      border-radius: 50%;
       box-shadow: 0 0 6px var(--accent-emerald);
     }
 
-    /* Workspace: Dual-Pane Grid */
-    .workspace-area {
+    /* Main Area */
+    .main-canvas {
       flex: 1;
-      overflow-y: auto;
-      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+      background-color: var(--bg-root);
+    }
+
+    /* Top utility bar */
+    .top-toolbar {
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    /* STATE 1: IDLE HERO VIEW (Matching Inspo) */
+    .hero-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 24px;
+      max-width: 820px;
+      width: 100%;
+      margin: 0 auto;
+      gap: 24px;
+      transition: all 0.3s ease;
+    }
+
+    .hero-title-group {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hero-kicker {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    .hero-heading {
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    /* Perplexity Input Box */
+    .perplexity-input-box {
+      width: 100%;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px 12px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      transition: border-color 0.15s ease;
+    }
+
+    .perplexity-input-box:focus-within {
+      border-color: var(--border-focus);
+    }
+
+    .perplexity-input-box textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+      min-height: 48px;
+      max-height: 120px;
+    }
+
+    .perplexity-input-box textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .input-bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .pill-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mode-pill {
+      background-color: var(--bg-chip);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .mode-pill.active {
+      border-color: rgba(32, 184, 205, 0.4);
+      color: var(--accent-teal);
+      background-color: var(--accent-teal-soft);
+    }
+
+    .mode-pill svg {
+      width: 13px;
+      height: 13px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .submit-circle-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: var(--text-primary);
+      color: #141515;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .submit-circle-btn:hover {
+      background-color: #FFFFFF;
+      transform: scale(1.05);
+    }
+
+    .submit-circle-btn:disabled {
+      background-color: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .submit-circle-btn svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      stroke-width: 2.4;
+      fill: none;
+    }
+
+    /* Dual Action Cards (Matching Inspo) */
+    .hero-cards-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      gap: 14px;
+      width: 100%;
+    }
+
+    .hero-card {
+      background: linear-gradient(180deg, #1C2426 0%, #171919 100%);
+      border: 1px solid rgba(32, 184, 205, 0.25);
+      border-radius: 10px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .hero-card:hover {
+      border-color: var(--accent-teal);
+      transform: translateY(-2px);
+    }
+
+    .hero-card.secondary {
+      background: linear-gradient(180deg, #202222 0%, #181919 100%);
+      border: 1px solid var(--border);
+    }
+
+    .hero-card.secondary:hover {
+      border-color: var(--border-focus);
+    }
+
+    .hero-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .hero-card-header svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--accent-teal);
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .hero-card.secondary .hero-card-header svg {
+      stroke: var(--text-secondary);
+    }
+
+    .hero-card-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* STATE 2: ACTIVE INVESTIGATION STUDIO (Dual-Pane) */
+    .studio-container {
+      display: none;
+      flex: 1;
+      height: 100%;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .studio-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
       min-height: 0;
     }
 
     @media (max-width: 1024px) {
-      .workspace-area {
+      .studio-grid {
         grid-template-columns: 1fr;
       }
     }
 
     .pane-card {
-      background-color: var(--bg-sidebar);
+      background-color: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 8px;
       display: flex;
@@ -277,8 +555,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .pane-title svg {
-      width: 16px;
-      height: 16px;
+      width: 15px;
+      height: 15px;
       stroke: var(--text-secondary);
       stroke-width: 2;
       fill: none;
@@ -288,19 +566,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       font-family: var(--font-mono);
       font-size: 11px;
       color: var(--text-secondary);
-      background-color: var(--bg-card);
+      background-color: var(--bg-root);
       padding: 3px 10px;
       border-radius: 4px;
       border: 1px solid var(--border);
-      max-width: 320px;
+      max-width: 280px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .viewport-container {
+    .viewport-box {
       flex: 1;
-      background-color: #101111;
+      background-color: #0E0F0F;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -321,21 +599,21 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
       color: var(--text-muted);
       text-align: center;
       padding: 24px;
     }
 
     .viewport-placeholder svg {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       stroke: var(--text-muted);
       stroke-width: 1.5;
       fill: none;
     }
 
-    /* Right Pane: Evidence Feed */
+    /* Evidence Pane */
     .evidence-feed {
       flex: 1;
       padding: 16px;
@@ -355,7 +633,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .source-pill {
-      background-color: var(--bg-card);
+      background-color: var(--bg-root);
       border: 1px solid var(--border);
       border-radius: 4px;
       padding: 4px 10px;
@@ -403,93 +681,53 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       word-break: break-word;
     }
 
-    .log-stream {
+    .telemetry-log {
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-secondary);
-      background-color: var(--bg-card);
+      background-color: var(--bg-root);
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 10px;
       display: flex;
       flex-direction: column;
       gap: 4px;
-      max-height: 150px;
+      max-height: 140px;
       overflow-y: auto;
     }
 
-    .log-entry {
+    .telemetry-entry {
       display: flex;
       align-items: flex-start;
       gap: 8px;
     }
 
-    .log-time {
+    .telemetry-time {
       color: var(--text-muted);
       flex-shrink: 0;
     }
 
-    /* Bottom Chatbox Section (Perplexity Style) */
-    footer.chat-dock {
+    /* Docked Bottom Chat Bar */
+    .docked-bottom-bar {
       background-color: var(--bg-sidebar);
       border-top: 1px solid var(--border);
-      padding: 14px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      padding: 12px 24px;
       flex-shrink: 0;
     }
 
-    .prompts-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-    }
-
-    .prompt-chip {
+    .docked-input-inner {
+      max-width: 900px;
+      margin: 0 auto;
       background-color: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text-secondary);
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.15s ease;
-    }
-
-    .prompt-chip:hover {
-      border-color: var(--accent-teal);
-      color: var(--text-primary);
-    }
-
-    .chat-input-container {
-      background-color: var(--bg-input);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 8px 14px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      transition: border-color 0.15s ease;
+      gap: 10px;
     }
 
-    .chat-input-container:focus-within {
-      border-color: var(--border-focus);
-    }
-
-    .chat-input-container svg.search-icon {
-      width: 18px;
-      height: 18px;
-      stroke: var(--text-muted);
-      stroke-width: 2;
-      fill: none;
-      flex-shrink: 0;
-    }
-
-    input#queryInput {
+    .docked-input-inner input {
       flex: 1;
       background: transparent;
       border: none;
@@ -499,268 +737,242 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       font-family: inherit;
     }
 
-    input#queryInput::placeholder {
+    .docked-input-inner input::placeholder {
       color: var(--text-muted);
-    }
-
-    .input-controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    .toggle-label {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 12px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .toggle-label input {
-      accent-color: var(--accent-teal);
-    }
-
-    .send-btn {
-      background-color: var(--accent-teal);
-      color: #0F1212;
-      border: none;
-      border-radius: 6px;
-      padding: 7px 14px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.15s ease;
-    }
-
-    .send-btn:hover {
-      background-color: #2ED0E6;
-    }
-
-    .send-btn:disabled {
-      background-color: var(--border);
-      color: var(--text-muted);
-      cursor: not-allowed;
-    }
-
-    .send-btn svg {
-      width: 14px;
-      height: 14px;
-      stroke: currentColor;
-      stroke-width: 2.5;
-      fill: none;
-    }
-
-    .btn-secondary {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border);
-      color: var(--text-secondary);
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
-    }
-
-    .btn-secondary:hover {
-      border-color: var(--text-secondary);
-      color: var(--text-primary);
-    }
-
-    .btn-secondary svg {
-      width: 14px;
-      height: 14px;
-      stroke: currentColor;
-      stroke-width: 2;
-      fill: none;
     }
   </style>
 </head>
 <body>
 
-  <!-- Left Sidebar (Skills & Protocols) -->
+  <!-- Left Sidebar -->
   <aside class="sidebar">
-    <div class="sidebar-header">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <span>Sherlock Studio</span>
+    <div class="sidebar-top">
+      <svg class="brand-icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+      <button class="icon-btn" title="Toggle Sidebar">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+      </button>
     </div>
 
-    <div class="sidebar-section">Active Skill</div>
-    <div class="skills-menu">
-      <div class="skill-item active" onclick="selectSkill('sherlock-scrape', 'Live Visual Browser (CDP Stream)', 'Search query to scout and visually validate live DOM...')">
+    <button class="btn-new-chat" onclick="showHeroView()">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      <span>New</span>
+    </button>
+
+    <div class="nav-list">
+      <div class="nav-item active" onclick="setMode('sherlock-scrape')">
         <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-        <span>sherlock-scrape</span>
+        <span>Computer (Scrape)</span>
       </div>
-      <div class="skill-item" onclick="selectSkill('sherlock-validate', 'SAFE Factuality Evaluator', 'Paste text with claims to evaluate atomic propositions...')">
+      <div class="nav-item" onclick="setMode('sherlock-validate')">
         <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-        <span>sherlock-validate</span>
+        <span>Automations (SAFE)</span>
       </div>
-      <div class="skill-item" onclick="selectSkill('sherlock-search', 'Multi-Angle Researcher', 'Topic or claim to research with cited evidence...')">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <span>sherlock-search</span>
+      <div class="nav-item" onclick="setMode('storm')">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        <span>Artifacts</span>
       </div>
-      <div class="skill-item" onclick="selectSkill('storm', 'Stanford Perspective Outline', 'Complex topic to outline from diverse expert angles...')">
-        <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-        <span>storm</span>
-      </div>
-      <div class="skill-item" onclick="selectSkill('fact-cache', 'Knowledge Base Cache', 'Search query to look up in local TTL cache...')">
-        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-        <span>fact-cache</span>
-      </div>
-      <div class="skill-item" onclick="selectSkill('anti-slop', 'Anti-Slop Linter', 'Text to purge conversational filler and buzzwords from...')">
-        <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
-        <span>anti-slop</span>
+      <div class="nav-item" onclick="openCacheModal()">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>Customize (Cache)</span>
       </div>
     </div>
 
-    <div class="sidebar-footer">
-      <div>Engine: Playwright Chromium</div>
-      <div>Architecture: Google DeepMind SAFE</div>
+    <div class="nav-divider"></div>
+
+    <div class="nav-section-title">
+      <span>Projects</span>
+      <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </div>
+    <div class="nav-subtext">No projects</div>
+
+    <div class="nav-section-title">
+      <span>Sessions</span>
+      <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </div>
+    <div class="nav-subtext" id="sessionListLabel">No recent sessions</div>
+
+    <div class="sidebar-bottom">
+      <div class="status-indicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="connLabel">Connected</span>
+      </div>
+      <span style="font-family: var(--font-mono); font-size: 11px;">v2.4</span>
     </div>
   </aside>
 
-  <!-- Main Work Area -->
-  <div class="main-wrapper">
-    <!-- Top Bar -->
-    <header class="topbar">
-      <div class="active-mode-badge">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="currentSkillLabel">sherlock-scrape | Live Visual Browser</span>
+  <!-- Main Canvas -->
+  <div class="main-canvas">
+    <div class="top-toolbar">
+      <button class="icon-btn" title="Information">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+      </button>
+      <button class="icon-btn" title="Settings" onclick="openCacheModal()">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      </button>
+    </div>
+
+    <!-- STATE 1: Centered Hero View -->
+    <div class="hero-container" id="heroView">
+      <div class="hero-title-group">
+        <div class="hero-kicker">Sherlock</div>
+        <h1 class="hero-heading">What do you want to know?</h1>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <button class="btn-secondary" onclick="openCacheModal()">
-          <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-          Fact Cache
-        </button>
-      </div>
-    </header>
+      <!-- Main Input Box (Matching Inspo) -->
+      <div class="perplexity-input-box">
+        <textarea 
+          id="heroInput" 
+          placeholder="Ask anything or verify live facts..." 
+          onkeydown="handleHeroKey(event)"
+          rows="2"
+        ></textarea>
 
-    <!-- Workspace: Dual-Pane Display -->
-    <section class="workspace-area">
-      <!-- Left: Live Browser Viewport -->
-      <div class="pane-card">
-        <div class="pane-header">
-          <div class="pane-title">
-            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-            <span>Live Viewport (CDP Stream)</span>
-          </div>
-          <div class="browser-url-bar" id="currentUrlDisplay">about:blank</div>
-        </div>
-
-        <div class="viewport-container">
-          <img id="streamCanvas" style="display: none;" alt="Live Browser Viewport">
-          <div class="viewport-placeholder" id="viewportPlaceholder">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
-            <div id="viewportStatusText">Ready. Enter a query in the box below to start visual validation.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right: Evidence & Verification Log -->
-      <div class="pane-card">
-        <div class="pane-header">
-          <div class="pane-title">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-            <span>Ground-Truth Verification</span>
-          </div>
-          <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-emerald);" id="safeScoreBadge">
-            SAFE Score: --
-          </div>
-        </div>
-
-        <div class="evidence-feed">
-          <!-- Discovered Sources -->
-          <div>
-            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.05em;">Discovered Sources</div>
-            <div class="sources-strip" id="sourcesStrip">
-              <span style="color: var(--text-muted); font-size: 12px;">No active sources yet.</span>
+        <div class="input-bottom-bar">
+          <div class="pill-group">
+            <div class="mode-pill active" id="pillScrape" onclick="setHeroPill('scrape')">
+              <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              <span>Search & Scrape</span>
+            </div>
+            <div class="mode-pill" id="pillValidate" onclick="setHeroPill('validate')">
+              <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>SAFE Factuality</span>
             </div>
           </div>
 
-          <!-- Synthesized Answer -->
-          <div class="answer-block">
-            <h4>Verified Data Summary</h4>
-            <div class="answer-content" id="answerContent">Submit a query in the chatbox below to start live search and Playwright validation.</div>
-          </div>
-
-          <!-- Activity Logs -->
-          <div>
-            <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.05em;">Telemetry Stream</div>
-            <div class="log-stream" id="logStream">
-              <div class="log-entry">
-                <span class="log-time">[System]</span>
-                <span>Sherlock Studio initialized. Ready.</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Actions -->
-          <div style="display: flex; justify-content: flex-end; padding-top: 8px;">
-            <button class="btn-secondary" onclick="copyMarkdown()">
-              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              Copy Markdown
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="submit-circle-btn" id="heroSubmitBtn" onclick="submitHeroQuery()" title="Send">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
             </button>
           </div>
         </div>
       </div>
-    </section>
 
-    <!-- Bottom Docked Chatbox (Perplexity Style) -->
-    <footer class="chat-dock">
-      <div class="prompts-bar">
-        <span style="color: var(--text-muted); font-size: 11px;">Suggestions:</span>
-        <span class="prompt-chip" onclick="setQuery('Always Yours Never Mine cinema ticket price Philippines')">Always Yours Never Mine cinema ticket price</span>
-        <span class="prompt-chip" onclick="setQuery('iPhone 15 Pro 2nd hand price greenhills')">iPhone 15 Pro Greenhills 2nd hand</span>
-        <span class="prompt-chip" onclick="setQuery('coffee shops in maginhawa street price range')">Maginhawa Cafe Prices</span>
+      <!-- Dual Action Cards (Matching Inspo) -->
+      <div class="hero-cards-grid">
+        <div class="hero-card" onclick="quickFill('Always Yours Never Mine cinema ticket price Philippines')">
+          <div class="hero-card-header">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <span>Search & validate</span>
+          </div>
+          <div class="hero-card-desc">
+            Discover primary sources and verify ticket prices, specifications, and live facts with DeepMind SAFE.
+          </div>
+        </div>
+
+        <div class="hero-card secondary" onclick="quickFill('iPhone 15 Pro 2nd hand price greenhills')">
+          <div class="hero-card-header">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <span>Get work done with Computer</span>
+          </div>
+          <div class="hero-card-desc">
+            Hands-off live browser session that streams Playwright DOM navigation and captures ground-truth data.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATE 2: Active Investigation Studio (Dual-Pane) -->
+    <div class="studio-container" id="studioView">
+      <div class="studio-grid">
+        <!-- Left: Live Browser Viewport -->
+        <div class="pane-card">
+          <div class="pane-header">
+            <div class="pane-title">
+              <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              <span>Live Viewport (CDP Stream)</span>
+            </div>
+            <div class="browser-url-bar" id="currentUrlDisplay">about:blank</div>
+          </div>
+
+          <div class="viewport-box">
+            <img id="streamCanvas" style="display: none;" alt="Live Browser Viewport">
+            <div class="viewport-placeholder" id="viewportPlaceholder">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+              <div id="viewportStatusText">Starting live browser session...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Evidence & Verification Log -->
+        <div class="pane-card">
+          <div class="pane-header">
+            <div class="pane-title">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              <span>Ground-Truth Verification</span>
+            </div>
+            <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-emerald);" id="safeScoreBadge">
+              SAFE Score: Working...
+            </div>
+          </div>
+
+          <div class="evidence-feed">
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.05em;">Discovered Sources</div>
+              <div class="sources-strip" id="sourcesStrip">
+                <span style="color: var(--text-muted); font-size: 12px;">Scouting primary sources...</span>
+              </div>
+            </div>
+
+            <div class="answer-block">
+              <h4>Verified Data Summary</h4>
+              <div class="answer-content" id="answerContent">Investigation in progress. Live DOM extraction underway...</div>
+            </div>
+
+            <div>
+              <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.05em;">Telemetry Stream</div>
+              <div class="telemetry-log" id="logStream">
+                <div class="telemetry-entry">
+                  <span class="telemetry-time">[System]</span>
+                  <span>Session initialized.</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; padding-top: 6px;">
+              <button class="btn-new-chat" style="margin: 0; padding: 6px 12px; font-size: 12px;" onclick="copyMarkdown()">
+                <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy Clean Markdown
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="chat-input-container">
-        <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input 
-          type="text" 
-          id="queryInput" 
-          placeholder="Search query to scout and visually validate live DOM..." 
-          onkeydown="handleKey(event)"
-          autofocus
-        >
-        <div class="input-controls">
-          <label class="toggle-label"><input type="checkbox" id="antiSlopToggle" checked> Anti-Slop</label>
-          <label class="toggle-label"><input type="checkbox" id="cacheToggle" checked> Fact Cache</label>
-          <button class="send-btn" id="runBtn" onclick="startInvestigation()">
-            <span>Send</span>
-            <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+      <!-- Docked Bottom Input Bar (Active State) -->
+      <div class="docked-bottom-bar">
+        <div class="docked-input-inner">
+          <input 
+            type="text" 
+            id="dockedInput" 
+            placeholder="Ask a follow-up or verify another claim..." 
+            onkeydown="handleDockedKey(event)"
+          >
+          <button class="submit-circle-btn" style="width: 28px; height: 28px;" onclick="submitDockedQuery()" title="Send">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
           </button>
         </div>
       </div>
-    </footer>
+    </div>
   </div>
 
   <script>
     let ws = null;
     let fullMarkdownOutput = "";
-    let activeSkill = "sherlock-scrape";
+    let activeMode = "sherlock-scrape";
 
     function initWebSocket() {
       const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
       ws = new WebSocket(`${proto}//${window.location.host}/ws`);
 
       ws.onopen = () => {
-        document.getElementById("statusDot").classList.add("active");
+        document.getElementById("statusDot").style.backgroundColor = "var(--accent-emerald)";
+        document.getElementById("connLabel").textContent = "Connected";
         addLog("WebSocket connection online.");
       };
 
       ws.onclose = () => {
-        document.getElementById("statusDot").classList.remove("active");
+        document.getElementById("statusDot").style.backgroundColor = "var(--text-muted)";
+        document.getElementById("connLabel").textContent = "Disconnected";
         addLog("WebSocket disconnected. Reconnecting in 2s...");
         setTimeout(initWebSocket, 2000);
       };
@@ -793,25 +1005,27 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       } else if (msg.type === "answer") {
         document.getElementById("answerContent").textContent = msg.text;
       } else if (msg.type === "complete") {
-        document.getElementById("runBtn").disabled = false;
         document.getElementById("safeScoreBadge").textContent = `SAFE Score: ${msg.score}%`;
         fullMarkdownOutput = msg.markdown;
-        addLog(`Verification complete. SAFE Score: ${msg.score}%`);
+        addLog(`Investigation complete. SAFE Score: ${msg.score}%`);
+        document.getElementById("heroSubmitBtn").disabled = false;
       }
     }
 
     function addLog(text) {
       const container = document.getElementById("logStream");
+      if (!container) return;
       const time = new Date().toLocaleTimeString([], { hour12: false });
       const entry = document.createElement("div");
-      entry.className = "log-entry";
-      entry.innerHTML = `<span class="log-time">[${time}]</span> <span>${text}</span>`;
+      entry.className = "telemetry-entry";
+      entry.innerHTML = `<span class="telemetry-time">[${time}]</span> <span>${text}</span>`;
       container.appendChild(entry);
       container.scrollTop = container.scrollHeight;
     }
 
     function renderSources(sources) {
       const strip = document.getElementById("sourcesStrip");
+      if (!strip) return;
       strip.innerHTML = "";
       if (!sources || sources.length === 0) {
         strip.innerHTML = '<span style="color: var(--text-muted); font-size: 12px;">No sources discovered.</span>';
@@ -827,54 +1041,84 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       });
     }
 
-    function selectSkill(skillName, label, placeholder) {
-      activeSkill = skillName;
-      document.querySelectorAll(".skill-item").forEach(el => el.classList.remove("active"));
-      event.currentTarget.classList.add("active");
-      document.getElementById("currentSkillLabel").textContent = `${skillName} | ${label}`;
-      document.getElementById("queryInput").placeholder = placeholder;
-      document.getElementById("queryInput").focus();
-      addLog(`Switched active mode to: /${skillName}`);
+    function showHeroView() {
+      document.getElementById("heroView").style.display = "flex";
+      document.getElementById("studioView").style.display = "none";
+      document.getElementById("heroInput").value = "";
+      document.getElementById("heroInput").focus();
     }
 
-    function setQuery(text) {
-      document.getElementById("queryInput").value = text;
-      document.getElementById("queryInput").focus();
+    function showStudioView() {
+      document.getElementById("heroView").style.display = "none";
+      document.getElementById("studioView").style.display = "flex";
     }
 
-    function handleKey(event) {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        startInvestigation();
+    function setHeroPill(mode) {
+      if (mode === "scrape") {
+        document.getElementById("pillScrape").classList.add("active");
+        document.getElementById("pillValidate").classList.remove("active");
+        activeMode = "sherlock-scrape";
+      } else {
+        document.getElementById("pillValidate").classList.add("active");
+        document.getElementById("pillScrape").classList.remove("active");
+        activeMode = "sherlock-validate";
       }
     }
 
-    function startInvestigation() {
-      const input = document.getElementById("queryInput");
-      const query = input.value.trim();
-      if (!query) return;
+    function quickFill(query) {
+      document.getElementById("heroInput").value = query;
+      submitHeroQuery();
+    }
 
+    function handleHeroKey(event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        submitHeroQuery();
+      }
+    }
+
+    function handleDockedKey(event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        submitDockedQuery();
+      }
+    }
+
+    function submitHeroQuery() {
+      const query = document.getElementById("heroInput").value.trim();
+      if (!query) return;
+      executeInvestigation(query);
+    }
+
+    function submitDockedQuery() {
+      const query = document.getElementById("dockedInput").value.trim();
+      if (!query) return;
+      document.getElementById("dockedInput").value = "";
+      executeInvestigation(query);
+    }
+
+    function executeInvestigation(query) {
       if (!ws || ws.readyState !== WebSocket.OPEN) {
-        addLog("WebSocket is reconnecting. Please wait a moment...");
+        alert("WebSocket is reconnecting. Please wait 2 seconds...");
         return;
       }
 
-      document.getElementById("runBtn").disabled = true;
+      showStudioView();
+
+      document.getElementById("heroSubmitBtn").disabled = true;
       document.getElementById("answerContent").textContent = "Investigation initiated. Conducting search scout and launching browser session...";
       document.getElementById("safeScoreBadge").textContent = "SAFE Score: Working...";
       document.getElementById("viewportStatusText").textContent = "Launching live browser session...";
-      
-      const antiSlop = document.getElementById("antiSlopToggle").checked;
-      const useCache = document.getElementById("cacheToggle").checked;
+      document.getElementById("sessionListLabel").textContent = query.length > 20 ? query.slice(0, 20) + "..." : query;
 
-      addLog(`Query submitted [${activeSkill}]: "${query}"`);
+      addLog(`Investigation started: "${query}"`);
 
       ws.send(JSON.stringify({
         action: "start",
-        skill: activeSkill,
+        skill: activeMode,
         query: query,
-        anti_slop: antiSlop,
-        use_cache: useCache
+        anti_slop: true,
+        use_cache: true
       }));
     }
 
@@ -1076,12 +1320,12 @@ def main():
     print("      🕵️  SHERLOCK INVESTIGATION STUDIO (Local Web UI)")
     print("=" * 65)
     print("  • Server running at: http://localhost:7860")
+    print("  • Layout: Perplexity / Computer Inspiron (Dual-Pane + Hero)")
     print("  • Live Playwright CDP Screencasting: Enabled")
     print("  • Anti-Slop Strictness: Enabled")
     print("  • Fact Cache: Enabled")
     print("=" * 65 + "\n")
 
-    # Automatically open browser
     try:
         webbrowser.open("http://localhost:7860")
     except Exception:
