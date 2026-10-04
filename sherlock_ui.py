@@ -2,12 +2,14 @@
 """
 Sherlock Investigation Studio - Perplexity-Inspired Local Web UI
 Spearheaded by Penny (UI/UX) with Sherlock (Factuality & Verification Engine)
-Features:
-- Zero emojis: Clean monochrome inline SVG icons throughout
+
+Architectural Standards:
+- Zero emojis: 100% inline monochrome SVG icons
+- Chatbox docked at bottom (Perplexity layout)
+- Left sidebar with skills roster (/sherlock, /sherlock-scrape, /safe, /fact-cache, /anti-slop)
+- Live Playwright CDP screencasting over non-blocking WebSocket
 - Anti-slop strictness: Direct answers first, zero marketing fluff, no gimmick badges
-- Live Playwright CDP screencast stream over WebSocket directly into canvas/image
-- Real-time Phase 1 (Scout) and Phase 2 (Live DOM Validator)
-- Integrated Fact Cache & SAFE Factuality Evaluator
+- Layout immunity (min-w-0, zero overlapping elements, responsive grid)
 """
 
 import sys
@@ -32,7 +34,7 @@ if SCRIPTS_DIR not in sys.path:
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from scripts.fact_cache import get_cached_fact, set_cached_fact, _load_cache
+from scripts.fact_cache import get_cached_fact, set_cached_fact, _load_cache, clear_expired
 from scripts.deslop_filter import deslop_text
 from scripts.safe_score import calculate_safe_score
 from sherlock_scrape import scout_search_leads
@@ -51,20 +53,23 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <title>Sherlock Investigation Studio</title>
   <style>
     :root {
-      --bg-primary: #191A1A;
-      --bg-secondary: #202222;
-      --bg-card: #262828;
-      --border-color: #343737;
-      --border-focus: #4A4E4E;
+      --bg-root: #131414;
+      --bg-sidebar: #191A1A;
+      --bg-main: #1C1D1D;
+      --bg-card: #242626;
+      --bg-input: #232525;
+      --border: #323535;
+      --border-focus: #484C4C;
       --text-primary: #EDEDED;
       --text-secondary: #9E9E9E;
-      --text-muted: #707575;
+      --text-muted: #6B7070;
       --accent-teal: #20B8CD;
-      --accent-teal-dark: #167E8C;
+      --accent-teal-dark: #158391;
       --accent-emerald: #10B981;
       --accent-crimson: #EF4444;
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       --font-mono: "Fira Code", "SF Mono", Consolas, monospace;
+      --sidebar-width: 250px;
     }
 
     * {
@@ -74,27 +79,30 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     body {
-      background-color: var(--bg-primary);
+      background-color: var(--bg-root);
       color: var(--text-primary);
       font-family: var(--font-sans);
       font-size: 14px;
       line-height: 1.5;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* Left Skills Sidebar */
+    aside.sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
+      flex-shrink: 0;
+      z-index: 10;
     }
 
-    /* Top Navigation */
-    header {
-      background-color: var(--bg-secondary);
-      border-bottom: 1px solid var(--border-color);
-      padding: 12px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .brand {
+    .sidebar-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 10px;
@@ -103,25 +111,110 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       letter-spacing: -0.01em;
     }
 
-    .brand svg {
+    .sidebar-header svg {
       width: 20px;
       height: 20px;
-      fill: none;
       stroke: var(--accent-teal);
       stroke-width: 2;
+      fill: none;
     }
 
-    .badge-status {
-      font-family: var(--font-mono);
+    .sidebar-section {
+      padding: 14px 12px 6px 16px;
       font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .skills-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 0 8px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .skill-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+    }
+
+    .skill-item:hover {
+      background-color: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    .skill-item.active {
       background-color: rgba(32, 184, 205, 0.1);
+      border-color: rgba(32, 184, 205, 0.25);
       color: var(--accent-teal);
+      font-weight: 500;
+    }
+
+    .skill-item svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Main Content Area */
+    .main-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      min-width: 0;
+      background-color: var(--bg-main);
+    }
+
+    /* Top Bar */
+    header.topbar {
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: var(--bg-sidebar);
+      flex-shrink: 0;
+    }
+
+    .active-mode-badge {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent-teal);
+      background-color: rgba(32, 184, 205, 0.1);
       border: 1px solid rgba(32, 184, 205, 0.25);
-      padding: 2px 8px;
+      padding: 3px 10px;
       border-radius: 4px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
 
     .status-dot {
@@ -136,165 +229,42 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       box-shadow: 0 0 6px var(--accent-emerald);
     }
 
-    /* Main Container */
-    main {
+    /* Workspace: Dual-Pane Grid */
+    .workspace-area {
       flex: 1;
-      max-width: 1440px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    /* Input Box Section */
-    .search-panel {
-      background-color: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 16px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .search-input-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .search-icon {
-      width: 18px;
-      height: 18px;
-      stroke: var(--text-muted);
-      stroke-width: 2;
-      flex-shrink: 0;
-    }
-
-    input#queryInput {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: var(--text-primary);
-      font-size: 15px;
-      font-family: inherit;
-    }
-
-    input#queryInput::placeholder {
-      color: var(--text-muted);
-    }
-
-    .submit-btn {
-      background-color: var(--accent-teal);
-      color: #0F1212;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: background 0.15s ease;
-    }
-
-    .submit-btn:hover {
-      background-color: #2ED0E6;
-    }
-
-    .submit-btn:disabled {
-      background-color: var(--border-color);
-      color: var(--text-muted);
-      cursor: not-allowed;
-    }
-
-    .options-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-top: 10px;
-      border-top: 1px solid var(--border-color);
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    .option-toggles {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .option-toggles label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-    }
-
-    .option-toggles input[type="checkbox"] {
-      accent-color: var(--accent-teal);
-    }
-
-    /* Quick Suggestions */
-    .quick-prompts {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .prompt-chip {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-color);
-      color: var(--text-secondary);
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .prompt-chip:hover {
-      border-color: var(--accent-teal);
-      color: var(--text-primary);
-    }
-
-    /* Dual Pane Investigation Layout */
-    .investigation-grid {
+      overflow-y: auto;
+      padding: 20px 24px;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 20px;
-      flex: 1;
-      min-height: 540px;
+      min-height: 0;
     }
 
     @media (max-width: 1024px) {
-      .investigation-grid {
+      .workspace-area {
         grid-template-columns: 1fr;
       }
     }
 
-    /* Left Pane: Live Browser Stream */
     .pane-card {
-      background-color: var(--bg-secondary);
-      border: 1px solid var(--border-color);
+      background-color: var(--bg-sidebar);
+      border: 1px solid var(--border);
       border-radius: 8px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
       min-width: 0;
+      height: 100%;
     }
 
     .pane-header {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border-color);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background-color: rgba(255, 255, 255, 0.01);
+      background-color: rgba(255, 255, 255, 0.015);
+      flex-shrink: 0;
     }
 
     .pane-title {
@@ -311,6 +281,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       height: 16px;
       stroke: var(--text-secondary);
       stroke-width: 2;
+      fill: none;
     }
 
     .browser-url-bar {
@@ -318,9 +289,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       font-size: 11px;
       color: var(--text-secondary);
       background-color: var(--bg-card);
-      padding: 3px 8px;
+      padding: 3px 10px;
       border-radius: 4px;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border);
       max-width: 320px;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -329,13 +300,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
     .viewport-container {
       flex: 1;
-      background-color: #121313;
+      background-color: #101111;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       overflow: hidden;
-      min-height: 440px;
+      min-height: 380px;
     }
 
     #streamCanvas {
@@ -357,33 +328,35 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .viewport-placeholder svg {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       stroke: var(--text-muted);
       stroke-width: 1.5;
+      fill: none;
     }
 
-    /* Right Pane: Evidence & Synthesized Answer */
+    /* Right Pane: Evidence Feed */
     .evidence-feed {
+      flex: 1;
       padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       overflow-y: auto;
-      max-height: 600px;
+      min-width: 0;
     }
 
     .sources-strip {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
     }
 
     .source-pill {
       background-color: var(--bg-card);
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border);
       border-radius: 4px;
       padding: 4px 10px;
       font-size: 12px;
@@ -405,19 +378,21 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       height: 12px;
       stroke: currentColor;
       stroke-width: 2;
+      fill: none;
     }
 
     .answer-block {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      flex: 1;
     }
 
     .answer-block h4 {
-      font-size: 13px;
+      font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--text-secondary);
+      color: var(--text-muted);
     }
 
     .answer-content {
@@ -425,46 +400,21 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       color: var(--text-primary);
       line-height: 1.6;
       white-space: pre-wrap;
+      word-break: break-word;
     }
 
-    /* Factuality Table */
-    .metrics-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-      font-family: var(--font-mono);
-      font-size: 12px;
-    }
-
-    .metrics-table th, .metrics-table td {
-      border: 1px solid var(--border-color);
-      padding: 6px 10px;
-      text-align: left;
-    }
-
-    .metrics-table th {
-      background-color: var(--bg-card);
-      color: var(--text-secondary);
-    }
-
-    .metrics-table td.status-pass {
-      color: var(--accent-emerald);
-      font-weight: 600;
-    }
-
-    /* Activity Stream Logs */
     .log-stream {
       font-family: var(--font-mono);
       font-size: 12px;
       color: var(--text-secondary);
       background-color: var(--bg-card);
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 12px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      max-height: 180px;
+      gap: 4px;
+      max-height: 150px;
       overflow-y: auto;
     }
 
@@ -479,19 +429,137 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       flex-shrink: 0;
     }
 
-    /* Action bar */
-    .actions-bar {
+    /* Bottom Chatbox Section (Perplexity Style) */
+    footer.chat-dock {
+      background-color: var(--bg-sidebar);
+      border-top: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .prompts-bar {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .prompt-chip {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .prompt-chip:hover {
+      border-color: var(--accent-teal);
+      color: var(--text-primary);
+    }
+
+    .chat-input-container {
+      background-color: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.15s ease;
+    }
+
+    .chat-input-container:focus-within {
+      border-color: var(--border-focus);
+    }
+
+    .chat-input-container svg.search-icon {
+      width: 18px;
+      height: 18px;
+      stroke: var(--text-muted);
+      stroke-width: 2;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    input#queryInput {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    input#queryInput::placeholder {
+      color: var(--text-muted);
+    }
+
+    .input-controls {
+      display: flex;
+      align-items: center;
       gap: 10px;
-      padding-top: 12px;
-      border-top: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-label input {
+      accent-color: var(--accent-teal);
+    }
+
+    .send-btn {
+      background-color: var(--accent-teal);
+      color: #0F1212;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+    }
+
+    .send-btn:hover {
+      background-color: #2ED0E6;
+    }
+
+    .send-btn:disabled {
+      background-color: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    .send-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 2.5;
+      fill: none;
     }
 
     .btn-secondary {
       background-color: var(--bg-card);
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border);
       color: var(--text-secondary);
       padding: 6px 12px;
       border-radius: 4px;
@@ -513,61 +581,77 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       height: 14px;
       stroke: currentColor;
       stroke-width: 2;
+      fill: none;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="brand">
+  <!-- Left Sidebar (Skills & Protocols) -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <span>Sherlock</span>
+      <span>Sherlock Studio</span>
     </div>
-    <div style="display: flex; align-items: center; gap: 14px;">
-      <div class="badge-status">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="connectionLabel">CDP Stream Ready</span>
-      </div>
-      <button class="btn-secondary" onclick="openCacheModal()">
-        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-        Fact Cache
-      </button>
-    </div>
-  </header>
 
-  <main>
-    <!-- Search Query Panel -->
-    <section class="search-panel">
-      <div class="search-input-wrapper">
-        <svg class="search-icon" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input type="text" id="queryInput" placeholder="Search web & visually verify live facts (e.g., 'always yours never mine ticket in cinemas price')" autofocus>
-        <button class="submit-btn" id="runBtn" onclick="startInvestigation()">
-          <span>Search & Validate</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    <div class="sidebar-section">Active Skill</div>
+    <div class="skills-menu">
+      <div class="skill-item active" onclick="selectSkill('sherlock-scrape', 'Live Visual Browser (CDP Stream)', 'Search query to scout and visually validate live DOM...')">
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        <span>sherlock-scrape</span>
+      </div>
+      <div class="skill-item" onclick="selectSkill('sherlock-validate', 'SAFE Factuality Evaluator', 'Paste text with claims to evaluate atomic propositions...')">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <span>sherlock-validate</span>
+      </div>
+      <div class="skill-item" onclick="selectSkill('sherlock-search', 'Multi-Angle Researcher', 'Topic or claim to research with cited evidence...')">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <span>sherlock-search</span>
+      </div>
+      <div class="skill-item" onclick="selectSkill('storm', 'Stanford Perspective Outline', 'Complex topic to outline from diverse expert angles...')">
+        <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+        <span>storm</span>
+      </div>
+      <div class="skill-item" onclick="selectSkill('fact-cache', 'Knowledge Base Cache', 'Search query to look up in local TTL cache...')">
+        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+        <span>fact-cache</span>
+      </div>
+      <div class="skill-item" onclick="selectSkill('anti-slop', 'Anti-Slop Linter', 'Text to purge conversational filler and buzzwords from...')">
+        <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+        <span>anti-slop</span>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div>Engine: Playwright Chromium</div>
+      <div>Architecture: Google DeepMind SAFE</div>
+    </div>
+  </aside>
+
+  <!-- Main Work Area -->
+  <div class="main-wrapper">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="active-mode-badge">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="currentSkillLabel">sherlock-scrape | Live Visual Browser</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button class="btn-secondary" onclick="openCacheModal()">
+          <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          Fact Cache
         </button>
       </div>
+    </header>
 
-      <div class="options-bar">
-        <div class="quick-prompts">
-          <span style="color: var(--text-muted);">Quick prompts:</span>
-          <span class="prompt-chip" onclick="setQuery('Always Yours Never Mine cinema ticket price Philippines')">Always Yours Never Mine cinema ticket price</span>
-          <span class="prompt-chip" onclick="setQuery('iPhone 15 Pro 2nd hand price greenhills')">iPhone 15 Pro Greenhills 2nd hand</span>
-          <span class="prompt-chip" onclick="setQuery('coffee shops in maginhawa street price range')">Maginhawa Cafe Prices</span>
-        </div>
-        <div class="option-toggles">
-          <label><input type="checkbox" id="antiSlopToggle" checked> Anti-Slop</label>
-          <label><input type="checkbox" id="cacheToggle" checked> Fact Cache</label>
-        </div>
-      </div>
-    </section>
-
-    <!-- Dual Pane Visual Investigation Studio -->
-    <section class="investigation-grid">
+    <!-- Workspace: Dual-Pane Display -->
+    <section class="workspace-area">
       <!-- Left: Live Browser Viewport -->
       <div class="pane-card">
         <div class="pane-header">
           <div class="pane-title">
-            <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
             <span>Live Viewport (CDP Stream)</span>
           </div>
           <div class="browser-url-bar" id="currentUrlDisplay">about:blank</div>
@@ -576,8 +660,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         <div class="viewport-container">
           <img id="streamCanvas" style="display: none;" alt="Live Browser Viewport">
           <div class="viewport-placeholder" id="viewportPlaceholder">
-            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
-            <div>Run an investigation to initiate live on-screen browser screencast</div>
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+            <div id="viewportStatusText">Ready. Enter a query in the box below to start visual validation.</div>
           </div>
         </div>
       </div>
@@ -586,7 +670,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       <div class="pane-card">
         <div class="pane-header">
           <div class="pane-title">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
             <span>Ground-Truth Verification</span>
           </div>
           <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-emerald);" id="safeScoreBadge">
@@ -606,35 +690,65 @@ HTML_TEMPLATE = """<!DOCTYPE html>
           <!-- Synthesized Answer -->
           <div class="answer-block">
             <h4>Verified Data Summary</h4>
-            <div class="answer-content" id="answerContent">Submit a query above to initiate search reconnaissance and live browser DOM extraction.</div>
+            <div class="answer-content" id="answerContent">Submit a query in the chatbox below to start live search and Playwright validation.</div>
           </div>
 
-          <!-- Execution Activity Logs -->
+          <!-- Activity Logs -->
           <div>
             <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.05em;">Telemetry Stream</div>
             <div class="log-stream" id="logStream">
               <div class="log-entry">
                 <span class="log-time">[System]</span>
-                <span>Investigation Studio initialized. Ready.</span>
+                <span>Sherlock Studio initialized. Ready.</span>
               </div>
             </div>
           </div>
 
           <!-- Actions -->
-          <div class="actions-bar">
+          <div style="display: flex; justify-content: flex-end; padding-top: 8px;">
             <button class="btn-secondary" onclick="copyMarkdown()">
-              <svg viewBox="0 0 24 24" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
               Copy Markdown
             </button>
           </div>
         </div>
       </div>
     </section>
-  </main>
+
+    <!-- Bottom Docked Chatbox (Perplexity Style) -->
+    <footer class="chat-dock">
+      <div class="prompts-bar">
+        <span style="color: var(--text-muted); font-size: 11px;">Suggestions:</span>
+        <span class="prompt-chip" onclick="setQuery('Always Yours Never Mine cinema ticket price Philippines')">Always Yours Never Mine cinema ticket price</span>
+        <span class="prompt-chip" onclick="setQuery('iPhone 15 Pro 2nd hand price greenhills')">iPhone 15 Pro Greenhills 2nd hand</span>
+        <span class="prompt-chip" onclick="setQuery('coffee shops in maginhawa street price range')">Maginhawa Cafe Prices</span>
+      </div>
+
+      <div class="chat-input-container">
+        <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input 
+          type="text" 
+          id="queryInput" 
+          placeholder="Search query to scout and visually validate live DOM..." 
+          onkeydown="handleKey(event)"
+          autofocus
+        >
+        <div class="input-controls">
+          <label class="toggle-label"><input type="checkbox" id="antiSlopToggle" checked> Anti-Slop</label>
+          <label class="toggle-label"><input type="checkbox" id="cacheToggle" checked> Fact Cache</label>
+          <button class="send-btn" id="runBtn" onclick="startInvestigation()">
+            <span>Send</span>
+            <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </div>
+      </div>
+    </footer>
+  </div>
 
   <script>
     let ws = null;
     let fullMarkdownOutput = "";
+    let activeSkill = "sherlock-scrape";
 
     function initWebSocket() {
       const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -642,15 +756,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
       ws.onopen = () => {
         document.getElementById("statusDot").classList.add("active");
-        document.getElementById("connectionLabel").textContent = "CDP Stream Ready";
-        addLog("WebSocket connection established.");
+        addLog("WebSocket connection online.");
       };
 
       ws.onclose = () => {
         document.getElementById("statusDot").classList.remove("active");
-        document.getElementById("connectionLabel").textContent = "Disconnected";
         addLog("WebSocket disconnected. Reconnecting in 2s...");
         setTimeout(initWebSocket, 2000);
+      };
+
+      ws.onerror = (err) => {
+        addLog(`WebSocket error: ${err}`);
       };
 
       ws.onmessage = (event) => {
@@ -668,6 +784,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         placeholder.style.display = "none";
       } else if (msg.type === "navigating") {
         document.getElementById("currentUrlDisplay").textContent = msg.url;
+        document.getElementById("viewportStatusText").textContent = `Navigating: ${msg.url}`;
         addLog(`Navigating: ${msg.url}`);
       } else if (msg.type === "log") {
         addLog(msg.text);
@@ -705,9 +822,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         a.className = "source-pill";
         a.href = s.url;
         a.target = "_blank";
-        a.innerHTML = `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> <span>[${idx+1}] ${s.domain}</span>`;
+        a.innerHTML = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> <span>[${idx+1}] ${s.domain}</span>`;
         strip.appendChild(a);
       });
+    }
+
+    function selectSkill(skillName, label, placeholder) {
+      activeSkill = skillName;
+      document.querySelectorAll(".skill-item").forEach(el => el.classList.remove("active"));
+      event.currentTarget.classList.add("active");
+      document.getElementById("currentSkillLabel").textContent = `${skillName} | ${label}`;
+      document.getElementById("queryInput").placeholder = placeholder;
+      document.getElementById("queryInput").focus();
+      addLog(`Switched active mode to: /${skillName}`);
     }
 
     function setQuery(text) {
@@ -715,19 +842,36 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       document.getElementById("queryInput").focus();
     }
 
+    function handleKey(event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        startInvestigation();
+      }
+    }
+
     function startInvestigation() {
-      const query = document.getElementById("queryInput").value.trim();
+      const input = document.getElementById("queryInput");
+      const query = input.value.trim();
       if (!query) return;
 
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        addLog("WebSocket is reconnecting. Please wait a moment...");
+        return;
+      }
+
       document.getElementById("runBtn").disabled = true;
-      document.getElementById("answerContent").textContent = "Scouting search leads and connecting browser session...";
-      document.getElementById("safeScoreBadge").textContent = "SAFE Score: In Progress";
+      document.getElementById("answerContent").textContent = "Investigation initiated. Conducting search scout and launching browser session...";
+      document.getElementById("safeScoreBadge").textContent = "SAFE Score: Working...";
+      document.getElementById("viewportStatusText").textContent = "Launching live browser session...";
       
       const antiSlop = document.getElementById("antiSlopToggle").checked;
       const useCache = document.getElementById("cacheToggle").checked;
 
+      addLog(`Query submitted [${activeSkill}]: "${query}"`);
+
       ws.send(JSON.stringify({
         action: "start",
+        skill: activeSkill,
         query: query,
         anti_slop: antiSlop,
         use_cache: useCache
@@ -786,10 +930,11 @@ async def websocket_endpoint(websocket: WebSocket):
 
             if action == "start":
                 query = payload.get("query", "")
+                skill = payload.get("skill", "sherlock-scrape")
                 use_cache = payload.get("use_cache", True)
                 anti_slop = payload.get("anti_slop", True)
 
-                await websocket.send_json({"type": "log", "text": f"Phase 1: Scouting search leads for: '{query}'..."})
+                await websocket.send_json({"type": "log", "text": f"Phase 1: Multi-engine search scout for: '{query}'..."})
 
                 # Check cache for scouted leads
                 cache_key = f"scout:{query.strip().lower()}"
@@ -800,8 +945,9 @@ async def websocket_endpoint(websocket: WebSocket):
                         leads = cached_leads
                         await websocket.send_json({"type": "log", "text": f"[Cache Hit] Reusing {len(leads)} verified leads."})
 
+                # Run blocking scout search in thread pool to prevent event loop starvation
                 if not leads:
-                    leads = scout_search_leads(query, max_leads=3)
+                    leads = await asyncio.to_thread(scout_search_leads, query, 3)
                     if leads and use_cache:
                         set_cached_fact(cache_key, leads, ttl_hours=24.0)
 
